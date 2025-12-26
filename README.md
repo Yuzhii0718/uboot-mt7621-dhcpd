@@ -2,6 +2,10 @@
 
 ![Web Recovery Page](WebRecovery.png)
 
+A modified version of DragonBluep's u-boot for mt7621 by Yuzhii, with support for auto dhcp, and beautiful webui.
+
+Support Actions to build automatically. 
+
 ## Online Build
 
 1. Fork This Repository.
