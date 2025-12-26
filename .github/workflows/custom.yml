@@ -132,7 +132,7 @@ jobs:
 
       - name: rename uboot-mt7621
         run: |
-          mv uboot-mt7621/archive/u-boot-mt7621.bin uboot-mt7621/archive/${{ inputs.model }}-${{ steps.timestamp.outputs.now }}_u-boot-mt7621.bin
+          mv uboot-mt7621/archive/u-boot-mt7621.bin uboot-mt7621/archive/${{ inputs.model }}-${{ steps.timestamp.outputs.now }}_u-boot-mt7621-dhcpd-yuzhii.bin
           mv uboot-mt7621/archive/u-boot.img uboot-mt7621/archive/${{ inputs.model }}-${{ steps.timestamp.outputs.now }}_u-boot.img
 
       - name: Create Release
