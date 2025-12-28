@@ -35,7 +35,7 @@ on:
       cpufreq:
         description: 'CPU 频率 (400 - 1200)'
         required: true
-        type: number
+        type: string
         default: '880'
       ramfreq:
         description: 'DRAM 频率'
