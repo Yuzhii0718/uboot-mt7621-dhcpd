@@ -1,72 +1,43 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML>
 <html>
+
 <head>
-    <title>Flashing - MediaTek System Recovery Mode</title>
-    <link rel="stylesheet" type="text/css" href="/style.css">
-    <script src="/script.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta charset="UTF-8">
-    <style>
-        /* Loading spinner */
-        #main .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 4px solid transparent;
-            border-top-color: currentColor;
-            border-right-color: currentColor;
-            animation: msr-spin 0.8s linear infinite;
-            margin: 16px auto;
-            opacity: 0.9;
-        }
-        @keyframes msr-spin {
-            to { transform: rotate(360deg); }
-        }
-    </style>
-</head>
-<body>
-    <div class="controls">
-        <div class="select-container">
-            <select id="language-selector">
-                <option value="en">English</option>
-                <option value="zh">中文</option>
-            </select>
-        </div>
-        <div class="select-container">
-            <select id="theme-selector">
-                <option value="auto" data-i18n="theme_auto">Auto</option>
-                <option value="light" data-i18n="theme_light">Light</option>
-                <option value="dark" data-i18n="theme_dark">Dark</option>
-            </select>
-        </div>
-    </div>
-    <div id="banner" data-i18n="banner">
-        MediaTek U-Boot System Recovery Mode
-    </div>
-    <div id="main">
-        <p data-i18n="upgrading">Upgrading is in progressing, please wait ...</p>
-        <div class="loading-spinner" role="status" aria-label="Loading"></div>
-        <p data-i18n="page_status">This page may be in not responding status for a short time.</p>
-    </div>
-    <script type="text/javascript">
-        var interval = window.setInterval(function () {
-            var xmlhttp = new XMLHttpRequest();
+    <meta charset="utf-8">
+    <title>Update in progress</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/main.js"></script>
+    <script>
+        function init() {
+            getversion();
 
-            window.clearInterval(interval);
-
-            xmlhttp.timeout = 300000;
-            xmlhttp.open("GET", "/result", true);
-            xmlhttp.send();
-            xmlhttp.onreadystatechange = function () {
-                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-                    document.getElementById("main").innerHTML = xmlhttp.responseText;
-                    // 重新应用语言翻译
-                    if (typeof applyLanguage === 'function') {
-                        applyLanguage();
+            ajax({
+                url: '/result',
+                done: function (response) {
+                    if (response == 'failed') {
+                        location = '/fail.html'
+                        return
                     }
-                }
-            }
-        }, 1000);
+
+                    document.getElementById('title').innerHTML = 'UPDATE COMPLETED'
+                    document.getElementById('info').innerHTML = 'Your device was successfully updated! Now rebooting...'
+                },
+                timeout: 1800000
+            })
+        }
     </script>
+</head>
+
+<body onload="init()">
+    <div id="m">
+        <h1 id="title">UPDATE IN PROGRESS</h1>
+        <p id="info">
+            Your file was successfully uploaded! Update is in progress and you should wait for automatic reset of the
+            device.<br>
+            Update time depends on image size and may take up to a few minutes.
+        </p>
+        <div id="l"></div>
+    </div>
+    <div id="version"></div>
 </body>
+
 </html>

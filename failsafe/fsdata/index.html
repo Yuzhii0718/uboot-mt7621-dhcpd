@@ -1,37 +1,51 @@
-<!doctype html>
+<!DOCTYPE HTML>
 <html>
+
 <head>
-    <title>MediaTek System Recovery Mode</title>
-    <link rel="stylesheet" type="text/css" href="/style.css">
-    <script src="/script.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
+    <title>Firmware update</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/main.js"></script>
 </head>
-<body>
-    <div class="controls">
-        <div class="select-container">🌐
-            <select id="language-selector">
-                <option value="en">English</option>
-                <option value="zh">简体中文</option>
-            </select>
-        </div>
-        <div class="select-container">🌓
-            <select id="theme-selector">
-                <option value="auto" data-i18n="theme_auto">Auto</option>
-                <option value="light" data-i18n="theme_light">Light</option>
-                <option value="dark" data-i18n="theme_dark">Dark</option>
-            </select>
-        </div>
-    </div>
-    <div id="banner" data-i18n="banner">
-        MediaTek U-Boot System Recovery Mode
-    </div>
-    <div id="main">
-        <p data-i18n="upload_new">Upload new firmware:</p>
-        <form action="/upload" method="post" enctype="multipart/form-data">
-            <p><input type="file" name="firmware" /></p>
-            <p><input type="submit" id="submit" value="Upload" data-i18n="upload_button" /></p>
+
+<body onload="startup()">
+    <div id="m">
+        <h1>FIRMWARE UPDATE</h1>
+        <p id="hint">
+            You are going to update <strong>firmware</strong> on the device.<br>
+            Please, choose file from your local hard drive and click <strong>Upload</strong> button.
+        </p>
+        <form id="form">
+            <input id="file" type="file" name="firmware">
+            <input type="button" value="Upload" onclick="upload('firmware')">
         </form>
+        <div>
+            <div class="bar" id="bar" style="display: none; --percent: 0;"></div>
+        </div>
+        <div id="size" style="display: none;">Size: xxxx</div>
+        <div id="md5" style="display: none;">MD5: xxxx</div>
+        <div id="upgrade" style="display: none;">
+            <p>If all information above is correct, click "Update".</p>
+            <button class="button" onclick="location = '/flashing.html'">Update</button>
+        </div>
+        <div class="i w">
+            <strong>OTHER ACTIONS</strong>
+            <ul>
+                <li><a href="/uboot.html">U-Boot update</a></li>
+                <li><a href="/initramfs.html">Boot initramfs</a></li>
+            </ul>
+        </div>
+        <div class="i w">
+            <strong>WARNINGS</strong>
+            <ul>
+                <li>do not power off the device during update</li>
+                <li>if everything goes well, the device will restart</li>
+                <li>you can upload whatever you want, so be sure that you choose proper firmware image for your device
+                </li>
+            </ul>
+        </div>
     </div>
+    <div id="version"></div>
 </body>
+
 </html>

@@ -775,6 +775,87 @@ int write_firmware_failsafe(size_t data_addr, uint32_t data_size)
 	return _write_firmware(flash, data_addr, data_size, 1);
 }
 
+int write_uboot_failsafe(size_t data_addr, uint32_t data_size)
+{
+	void *flash;
+	uint64_t part_off, part_size, tmp;
+	uint32_t erase_size;
+	int ret;
+
+	flash = mtk_board_get_flash_dev();
+	if (!flash)
+		return CMD_RET_FAILURE;
+
+	if (get_mtd_part_info("u-boot", &part_off, &part_size)) {
+		printf(COLOR_ERROR "*** MTD partition 'u-boot' does not exist! ***" COLOR_NORMAL "\n");
+		return CMD_RET_FAILURE;
+	}
+
+	if (part_size < data_size) {
+		printf("\n" COLOR_ERROR "*** Error: new u-boot is larger than mtd partition 'u-boot' ***" COLOR_NORMAL "\n");
+		printf(COLOR_ERROR "*** Operation Aborted! ***" COLOR_NORMAL "\n");
+		return CMD_RET_FAILURE;
+	}
+
+	tmp = part_off;
+	if (do_div(tmp, mtk_board_get_flash_erase_size(flash))) {
+		printf(COLOR_ERROR "*** MTD partition 'u-boot' does not start on erase boundary! ***" COLOR_NORMAL "\n");
+		return CMD_RET_FAILURE;
+	}
+
+	erase_size = ALIGN(data_size, mtk_board_get_flash_erase_size(flash));
+	if (erase_size > part_size) {
+		printf("\n" COLOR_ERROR "*** Error: erase size exceeds mtd partition 'u-boot' ***" COLOR_NORMAL "\n");
+		printf(COLOR_ERROR "*** Operation Aborted! ***" COLOR_NORMAL "\n");
+		return CMD_RET_FAILURE;
+	}
+
+	printf("\n");
+	printf("Erasing from 0x%llx to 0x%llx, size 0x%x ... ", part_off,
+	       part_off + erase_size - 1, erase_size);
+
+	ret = mtk_board_flash_erase(flash, part_off, erase_size);
+	if (ret) {
+		printf("Fail\n");
+		printf(COLOR_ERROR "*** Flash erasure [%llx-%llx] failed! ***" COLOR_NORMAL "\n",
+		       part_off, part_off + erase_size - 1);
+		return CMD_RET_FAILURE;
+	}
+	printf("OK\n");
+
+	printf("Writting from 0x%x to 0x%llx, size 0x%x ... ", data_addr,
+	       part_off, data_size);
+
+	ret = mtk_board_flash_write(flash, part_off, data_size,
+				    (void *)data_addr);
+	if (ret) {
+		printf("Fail\n");
+		printf(COLOR_ERROR "*** Flash program [%llx-%llx] failed! ***" COLOR_NORMAL "\n",
+		       part_off, part_off + data_size - 1);
+		return CMD_RET_FAILURE;
+	}
+
+	printf("OK\n");
+	printf("\n" COLOR_PROMPT "*** U-Boot upgrade completed! ***" COLOR_NORMAL "\n");
+
+	return CMD_RET_SUCCESS;
+}
+
+int write_bootloader_failsafe(size_t data_addr, uint32_t data_size)
+{
+	void *flash;
+
+	flash = mtk_board_get_flash_dev();
+	if (!flash)
+		return CMD_RET_FAILURE;
+
+	/*
+	 * Keep this API for compatibility. The failsafe web UI will use
+	 * write_uboot_failsafe() to write the fixed 'u-boot' partition.
+	 */
+	return write_bootloader(flash, data_addr, data_size, 0);
+}
+
 static int write_firmware(void *flash, size_t data_addr, uint32_t data_size)
 {
 	return _write_firmware(flash, data_addr, data_size, 0);

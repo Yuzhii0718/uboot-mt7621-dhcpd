@@ -7,6 +7,9 @@
  */
 
 #include <common.h>
+#include <command.h>
+#include <image.h>
+#include <linux/libfdt.h>
 #include <malloc.h>
 #include <net/tcp.h>
 #include <net/httpd.h>
@@ -20,7 +23,23 @@ static const void *upload_data;
 static size_t upload_size;
 static int upgrade_success;
 
+static void not_found_handler(enum httpd_uri_handler_status status,
+	struct httpd_request *request,
+	struct httpd_response *response);
+
+enum failsafe_fw_type {
+	FAILSAFE_FW_FIRMWARE,
+	FAILSAFE_FW_UBOOT,
+	FAILSAFE_FW_INITRAMFS,
+};
+
+static enum failsafe_fw_type fw_type;
+
+extern const char version_string[];
+
 extern int write_firmware_failsafe(size_t data_addr, uint32_t data_size);
+extern int write_bootloader_failsafe(size_t data_addr, uint32_t data_size);
+extern int write_uboot_failsafe(size_t data_addr, uint32_t data_size);
 
 static int output_plain_file(struct httpd_response *response,
 	const char *filename)
@@ -56,177 +75,154 @@ static void index_handler(enum httpd_uri_handler_status status,
 		output_plain_file(response, "index.html");
 }
 
+static void version_handler(enum httpd_uri_handler_status status,
+	struct httpd_request *request,
+	struct httpd_response *response)
+{
+	if (status != HTTP_CB_NEW)
+		return;
+
+	response->status = HTTP_RESP_STD;
+	response->data = version_string;
+	response->size = strlen(response->data);
+
+	response->info.code = 200;
+	response->info.connection_close = 1;
+	response->info.content_type = "text/plain";
+}
+
+static void html_handler(enum httpd_uri_handler_status status,
+	struct httpd_request *request,
+	struct httpd_response *response)
+{
+	if (status != HTTP_CB_NEW)
+		return;
+
+	if (output_plain_file(response, request->urih->uri + 1))
+		not_found_handler(status, request, response);
+}
+
 static void upload_handler(enum httpd_uri_handler_status status,
 	struct httpd_request *request,
 	struct httpd_response *response)
 {
-	char *buff, *md5_ptr, *size_ptr, size_str[16];
-	u8 md5_sum[16];
+	static char md5_str[33] = "";
+	static char resp[128];
 	struct httpd_form_value *fw;
-	const struct fs_desc *file;
+	u8 md5_sum[16];
 	int i;
 
 	static char hexchars[] = "0123456789abcdef";
 
-	if (status == HTTP_CB_NEW) {
-		fw = httpd_request_find_value(request, "firmware");
-		if (!fw) {
-			response->info.code = 302;
-			response->info.connection_close = 1;
-			response->info.location = "/";
-			return;
-		}
-
-		/* TODO: add firmware validation here if necessary */
-
-		if (output_plain_file(response, "upload.html")) {
-			response->info.code = 500;
-			return;
-		}
-
-		buff = malloc(response->size + 1);
-		if (buff) {
-			memcpy(buff, response->data, response->size);
-			buff[response->size] = 0;
-
-			md5_ptr = strstr(buff, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
-			size_ptr = strstr(buff, "YYYYYYYYYY");
-
-			if (md5_ptr) {
-				md5((u8 *) fw->data, fw->size, md5_sum);
-				for (i = 0; i < 16; i++) {
-					u8 hex;
-					
-					hex = (md5_sum[i] >> 4) & 0xf;
-					md5_ptr[i * 2] = hexchars[hex];
-					hex = md5_sum[i] & 0xf;
-					md5_ptr[i * 2 + 1] = hexchars[hex];
-				}
-			}
-
-			if (size_ptr) {
-				u32 n;
-
-				n = snprintf(size_str, sizeof(size_str), "%d",
-					fw->size);
-				memset(size_str + n, ' ', sizeof(size_str) - n);
-				memcpy(size_ptr, size_str, 10);
-			}
-
-			response->data = buff;
-		}
-
-		upload_data_id = upload_id;
-		upload_data = fw->data;
-		upload_size = fw->size;
-
+	if (status != HTTP_CB_NEW)
 		return;
+
+	response->status = HTTP_RESP_STD;
+	response->info.code = 200;
+	response->info.connection_close = 1;
+	response->info.content_type = "text/plain";
+
+	fw = httpd_request_find_value(request, "firmware");
+	if (fw) {
+		fw_type = FAILSAFE_FW_FIRMWARE;
+		goto done;
 	}
 
-	if (status == HTTP_CB_CLOSED) {
-		file = fs_find_file("upload.html");
+	fw = httpd_request_find_value(request, "uboot");
+	if (!fw)
+		fw = httpd_request_find_value(request, "u-boot");
+	if (fw) {
+		fw_type = FAILSAFE_FW_UBOOT;
+		goto done;
+	}
 
-		if (file) {
-			if (file->data != response->data)
-				free((void *) response->data);
+	fw = httpd_request_find_value(request, "initramfs");
+	if (fw) {
+		int fdt_ret;
+		bool is_uimage;
+		const u8 *b;
+
+		fw_type = FAILSAFE_FW_INITRAMFS;
+		/*
+		 * Accept both FIT (FDT header) and legacy uImage.
+		 * OpenWrt ramips/mt7621 initramfs images are commonly legacy uImage.
+		 */
+		fdt_ret = fdt_check_header(fw->data);
+		is_uimage = fw->size >= sizeof(image_header_t) &&
+			image_check_magic((const image_header_t *)fw->data);
+		if (fdt_ret && !is_uimage) {
+			b = (const u8 *)fw->data;
+			printf("failsafe: initramfs invalid image: size=%zu, fdt=%d, first4=%02x%02x%02x%02x\n",
+			       fw->size, fdt_ret, b[0], b[1], b[2], b[3]);
+			goto fail;
 		}
+		goto done;
 	}
-}
 
-static void flashing_handler(enum httpd_uri_handler_status status,
-	struct httpd_request *request,
-	struct httpd_response *response)
-{
-	if (status == HTTP_CB_NEW)
-		output_plain_file(response, "flashing.html");
-}
+fail:
+	response->data = "fail";
+	response->size = strlen(response->data);
+	return;
 
-struct flashing_status {
-	char buf[4096];
-	int ret;
-	int body_sent;
-};
+done:
+	upload_data_id = upload_id;
+	upload_data = fw->data;
+	upload_size = fw->size;
+
+	md5((u8 *)fw->data, fw->size, md5_sum);
+	for (i = 0; i < 16; i++) {
+		u8 hex = (md5_sum[i] >> 4) & 0xf;
+		md5_str[i * 2] = hexchars[hex];
+		hex = md5_sum[i] & 0xf;
+		md5_str[i * 2 + 1] = hexchars[hex];
+	}
+	md5_str[32] = '\0';
+
+	snprintf(resp, sizeof(resp), "%zu %s", fw->size, md5_str);
+	response->data = resp;
+	response->size = strlen(resp);
+}
 
 static void result_handler(enum httpd_uri_handler_status status,
 	struct httpd_request *request,
 	struct httpd_response *response)
 {
-	const struct fs_desc *file;
-	struct flashing_status *st;
-	u32 size;
+	int ret = -1;
 
 	if (status == HTTP_CB_NEW) {
-		st = calloc(1, sizeof(*st));
-		if (!st) {
-			response->info.code = 500;
-			return;
+		if (upload_data_id == upload_id) {
+			switch (fw_type) {
+			case FAILSAFE_FW_INITRAMFS:
+				ret = 0;
+				break;
+			case FAILSAFE_FW_UBOOT:
+				ret = write_uboot_failsafe((size_t)upload_data,
+					upload_size);
+				break;
+			case FAILSAFE_FW_FIRMWARE:
+			default:
+				ret = write_firmware_failsafe((size_t)upload_data,
+					upload_size);
+				break;
+			}
 		}
-
-		st->ret = -1;
-
-		response->session_data = st;
-
-		response->status = HTTP_RESP_CUSTOM;
-
-		response->info.http_1_0 = 1;
-		response->info.content_length = -1;
-		response->info.connection_close = 1;
-		response->info.content_type = "text/html";
-		response->info.code = 200;
-
-		size = http_make_response_header(&response->info,
-			st->buf, sizeof(st->buf));
-
-		response->data = st->buf;
-		response->size = size;
-
-		return;
-	}
-
-	if (status == HTTP_CB_RESPONDING) {
-		st = response->session_data;
-
-		if (st->body_sent) {
-			response->status = HTTP_RESP_NONE;
-			return;
-		}
-
-		if (upload_data_id == upload_id)
-			st->ret = write_firmware_failsafe((size_t) upload_data,
-				upload_size);
 
 		/* invalidate upload identifier */
 		upload_data_id = rand();
 
-		if (!st->ret)
-			file = fs_find_file("success.html");
-		else
-			file = fs_find_file("fail.html");
+		upgrade_success = !ret;
 
-		if (!file) {
-			if (!st->ret)
-				response->data = "Upgrade completed!";
-			else
-				response->data = "Upgrade failed!";
-			response->size = strlen(response->data);
-			return;
-		}
-
-		response->data = file->data;
-		response->size = file->size;
-
-		st->body_sent = 1;
+		response->status = HTTP_RESP_STD;
+		response->info.code = 200;
+		response->info.connection_close = 1;
+		response->info.content_type = "text/plain";
+		response->data = upgrade_success ? "success" : "failed";
+		response->size = strlen(response->data);
 
 		return;
 	}
 
 	if (status == HTTP_CB_CLOSED) {
-		st = response->session_data;
-
-		upgrade_success = !st->ret;
-
-		free(response->session_data);
-		
 		if (upgrade_success)
 			tcp_close_all_conn();
 	}
@@ -242,13 +238,13 @@ static void style_handler(enum httpd_uri_handler_status status,
 	}
 }
 
-static void script_handler(enum httpd_uri_handler_status status,
+static void js_handler(enum httpd_uri_handler_status status,
 	struct httpd_request *request,
 	struct httpd_response *response)
 {
 	if (status == HTTP_CB_NEW) {
-		output_plain_file(response, "script.js");
-		response->info.content_type = "application/javascript";
+		output_plain_file(response, "main.js");
+		response->info.content_type = "text/javascript";
 	}
 }
 
@@ -278,11 +274,21 @@ int start_web_failsafe(void)
 
 	httpd_register_uri_handler(inst, "/", &index_handler, NULL);
 	httpd_register_uri_handler(inst, "/cgi-bin/luci", &index_handler, NULL);
+	httpd_register_uri_handler(inst, "/cgi-bin/luci/", &index_handler, NULL);
+
 	httpd_register_uri_handler(inst, "/upload", &upload_handler, NULL);
-	httpd_register_uri_handler(inst, "/flashing", &flashing_handler, NULL);
 	httpd_register_uri_handler(inst, "/result", &result_handler, NULL);
+	httpd_register_uri_handler(inst, "/version", &version_handler, NULL);
+
+	httpd_register_uri_handler(inst, "/main.js", &js_handler, NULL);
 	httpd_register_uri_handler(inst, "/style.css", &style_handler, NULL);
-	httpd_register_uri_handler(inst, "/script.js", &script_handler, NULL);
+
+	httpd_register_uri_handler(inst, "/booting.html", &html_handler, NULL);
+	httpd_register_uri_handler(inst, "/fail.html", &html_handler, NULL);
+	httpd_register_uri_handler(inst, "/flashing.html", &html_handler, NULL);
+	httpd_register_uri_handler(inst, "/initramfs.html", &html_handler, NULL);
+	httpd_register_uri_handler(inst, "/uboot.html", &html_handler, NULL);
+
 	httpd_register_uri_handler(inst, "", &not_found_handler, NULL);
 
 	if (IS_ENABLED(CONFIG_MTK_DHCPD))
@@ -305,8 +311,17 @@ static int do_httpd(cmd_tbl_t *cmdtp, int flag, int argc,
 	
 	ret = start_web_failsafe();
 
-	if (upgrade_success)
-		do_reset(NULL, 0, 0, NULL);
+	if (upgrade_success) {
+		if (fw_type == FAILSAFE_FW_INITRAMFS) {
+			char cmd[64];
+
+			/* initramfs is expected to be a FIT image */
+			snprintf(cmd, sizeof(cmd), "bootm 0x%lx", (ulong)upload_data);
+			run_command(cmd, 0);
+		} else {
+			do_reset(NULL, 0, 0, NULL);
+		}
+	}
 
 	return ret;
 }
