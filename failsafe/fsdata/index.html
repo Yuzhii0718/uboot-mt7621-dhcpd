@@ -9,7 +9,7 @@
     <script src="/main.js"></script>
 </head>
 
-<body onload="startup()">
+<body onload="appInit('index')">
     <div id="m">
         <h1 data-i18n="h_firmware">FIRMWARE UPDATE</h1>
         <p id="hint">
@@ -17,6 +17,7 @@
                 Please, choose file from your local hard drive and click <strong>Upload</strong> button.</span>
         </p>
         <form id="form">
+            <div id="sysinfo" class="sysinfo" data-i18n="sysinfo_loading">Loading system info...</div>
             <input id="file" type="file" name="firmware">
             <input type="button" value="Upload" data-i18n-value="btn_upload" onclick="upload('firmware')">
         </form>

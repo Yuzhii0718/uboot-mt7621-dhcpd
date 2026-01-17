@@ -1,0 +1,45 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="page_factory_title">Factory update</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/main.js"></script>
+</head>
+
+<body onload="appInit('factory')">
+    <div id="m">
+        <h1 data-i18n="h_factory">FACTORY UPDATE</h1>
+        <p id="hint">
+            <span data-i18n-html="hint_factory">You are going to update <strong>Factory (Wireless Calibration)</strong>
+                partition on the device.<br>
+                Please, choose file from your local hard drive and click <strong>Upload</strong> button.</span>
+        </p>
+        <form id="form">
+            <input id="file" type="file" name="factory">
+            <input type="button" value="Upload" data-i18n-value="btn_upload" onclick="upload('factory')">
+        </form>
+        <div>
+            <div class="bar" id="bar" style="display: none; --percent: 0;"></div>
+        </div>
+        <div id="size" style="display: none;">Size: xxxx</div>
+        <div id="md5" style="display: none;">MD5: xxxx</div>
+        <div id="upgrade" style="display: none;">
+            <p data-i18n="prompt_update">If all information above is correct, click "Update".</p>
+            <button class="button" data-i18n="btn_update" onclick="location = '/flashing.html'">Update</button>
+        </div>
+        <div class="i w">
+            <strong data-i18n="other_warnings">WARNINGS</strong>
+            <ul>
+                <li data-i18n="warn_no_poweroff">do not power off the device during update</li>
+                <li data-i18n="warn_restart">if everything goes well, the device will restart</li>
+                <li data-i18n="warn_factory_danger">updating factory partition may damage your device or break calibration data</li>
+            </ul>
+        </div>
+    </div>
+    <div id="version"></div>
+</body>
+
+</html>

@@ -18,6 +18,8 @@ cd $(dirname "$0")
 # $7	number: ram frequency
 # $8	string: ddr param
 # $9	string: baud rate
+# $10	string: board model (optional)
+# $11	string: board name/id (optional)
 
 echo "Parse flash type: $1"
 # simple check if partition table is valid
@@ -114,6 +116,25 @@ if [ "$9" = '57600' ]; then
 	echo "CONFIG_BAUDRATE=57600" >> ${DEFCONFIG}
 else
 	echo "CONFIG_BAUDRATE=115200" >> ${DEFCONFIG}
+fi
+
+BOARD_MODEL="${10-}"
+BOARD_NAME="${11-}"
+
+if [ -n "${BOARD_MODEL}" ]; then
+	MODEL_ESC=${BOARD_MODEL//\"/\\\"}
+	echo "set failsafe board model: ${BOARD_MODEL}"
+	echo "CONFIG_WEBUI_FAILSAFE_BOARD_MODEL=\"${MODEL_ESC}\"" >> ${DEFCONFIG}
+fi
+
+if [ -n "${BOARD_NAME}" ]; then
+	NAME_ESC=${BOARD_NAME//\"/\\\"}
+	echo "set failsafe board name: ${BOARD_NAME}"
+	echo "CONFIG_WEBUI_FAILSAFE_BOARD_NAME=\"${NAME_ESC}\"" >> ${DEFCONFIG}
+elif [ -n "${BOARD_MODEL}" ]; then
+	# default: use model as name if name is not explicitly provided
+	MODEL_ESC=${BOARD_MODEL//\"/\\\"}
+	echo "CONFIG_WEBUI_FAILSAFE_BOARD_NAME=\"${MODEL_ESC}\"" >> ${DEFCONFIG}
 fi
 
 make mt7621_build_defconfig

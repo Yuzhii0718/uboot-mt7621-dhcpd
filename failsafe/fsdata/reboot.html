@@ -1,0 +1,27 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="page_reboot_title">Reboot</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/main.js"></script>
+</head>
+
+<body onload="appInit('reboot')">
+    <div id="m">
+        <h1 data-i18n="h_reboot">REBOOTING DEVICE</h1>
+        <p id="reboot_status" data-i18n-html="reboot_info">Reboot request has been sent. Please wait...<br>
+            This page may be in not responding status for a short time.</p>
+        <div class="i w">
+            <strong data-i18n="other_warnings">WARNINGS</strong>
+            <ul>
+                <li data-i18n="reboot_warn_1">do not power off the device during reboot</li>
+            </ul>
+        </div>
+    </div>
+    <div id="version"></div>
+</body>
+
+</html>

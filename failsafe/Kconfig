@@ -20,4 +20,18 @@ config FAILSAFE_ON_BUTTON
 	bool "Press and hold the reset button to enter the failsafe mode"
 	default n
 
+config WEBUI_FAILSAFE_BOARD_MODEL
+	string "Failsafe board model string"
+	default ""
+	help
+	  Optional compile-time board model string for the failsafe Web UI.
+	  Used as a fallback when DT model / environment variables are not set.
+
+config WEBUI_FAILSAFE_BOARD_NAME
+	string "Failsafe board name string"
+	default ""
+	help
+	  Optional compile-time board name/id string for the failsafe Web UI.
+	  Used as a fallback when environment variables are not set.
+
 endif # WEBUI_FAILSAFE

@@ -13,6 +13,10 @@ obj-y += booting.o
 FILE_booting.o := booting.html
 FSPATH_booting.o := booting.html
 
+obj-y += backup.o
+FILE_backup.o := backup.html
+FSPATH_backup.o := backup.html
+
 obj-y += fail.o
 FILE_fail.o := fail.html
 FSPATH_fail.o := fail.html
@@ -20,6 +24,10 @@ FSPATH_fail.o := fail.html
 obj-y += flashing.o
 FILE_flashing.o := flashing.html
 FSPATH_flashing.o := flashing.html
+
+obj-y += factory.o
+FILE_factory.o := factory.html
+FSPATH_factory.o := factory.html
 
 obj-y += index.o
 FILE_index.o := index.html
@@ -40,6 +48,10 @@ FSPATH_style.o := style.css
 obj-y += uboot.o
 FILE_uboot.o := uboot.html
 FSPATH_uboot.o := uboot.html
+
+obj-y += reboot.o
+FILE_reboot.o := reboot.html
+FSPATH_reboot.o := reboot.html
 
 # customized build rules
 strip_path = $(subst /,_,$(subst -,_,$(subst .,_,$(1))))

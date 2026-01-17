@@ -17,6 +17,10 @@ DDRPARM=""
 BAUDRATE="${DEFAULT_BAUDRATE}"
 YES="0"
 
+# Board identity (optional, for failsafe sysinfo fallback)
+MODEL=""
+BOARD_NAME=""
+
 # Partition defaults
 DEFAULT_UBOOT_SIZE="512k"
 DEFAULT_UBOOT_ENV_SIZE="512k"
@@ -47,6 +51,8 @@ Options:
   --ramfreq {400|800|1066|1200}   DRAM 速率 MT/s
   --ddrparam NAME                 DDR 参数（从内置列表选择之一或自定义）
   --baudrate {57600|115200}       串口速率（默认 115200）
+  --model STRING                  设备型号/版型（可选，会写入 failsafe sysinfo 兜底）
+  --board-name STRING             设备名称/代号（可选，默认同 --model）
   --yes                           跳过交互确认
   -h, --help                      显示帮助
 
@@ -54,6 +60,7 @@ Options:
   ./build.sh \
     --flash NMBM \
     --mtdparts "512k(u-boot),512k(u-boot-env),512k(factory),-(firmware)" \
+    --model "FCJ_G-AX1800-F" \
     --kernel-offset 0x180000 \
     --reset-pin 7 \
     --sysled-pin 13 \
@@ -80,6 +87,8 @@ parse_args() {
       --ramfreq) RAMFREQ="$2"; shift 2;;
       --ddrparam) DDRPARM="$2"; shift 2;;
       --baudrate) BAUDRATE="$2"; shift 2;;
+      --model) MODEL="$2"; shift 2;;
+      --board-name) BOARD_NAME="$2"; shift 2;;
       --yes) YES="1"; shift;;
       -h|--help) print_usage; exit 0;;
       *) echo "未知参数: $1"; print_usage; exit 1;;
@@ -259,13 +268,21 @@ interactive() {
   # 波特率
   local brsel=$(select_with_default "选择串口波特率：" "115200" 57600 115200)
   BAUDRATE="${brsel}"
+
+  # 版型/名称（可选，用于 failsafe sysinfo 的兜底显示）
+  MODEL=$(ask "设备型号/版型（可选，留空则不写入 failsafe 兜底配置）" "")
+  if [[ -n "${MODEL}" ]]; then
+    BOARD_NAME=$(ask "设备名称/代号（可选，默认同上）" "${MODEL}")
+  else
+    BOARD_NAME=""
+  fi
 }
 
 summary() {
   cat <<EOF
 将执行：
   ./customize.sh '${FLASH}' '${MTDPARTS}' '${KERNEL_OFFSET}' '${RESET_PIN}' \
-  '${SYSLED_PIN}' '${CPUFREQ}' '${RAMFREQ}' '${DDRPARM}' '${BAUDRATE}'
+  '${SYSLED_PIN}' '${CPUFREQ}' '${RAMFREQ}' '${DDRPARM}' '${BAUDRATE}' '${MODEL}' '${BOARD_NAME}'
 EOF
 }
 
@@ -280,6 +297,12 @@ main() {
     interactive
   fi
   validate
+
+  # defaults
+  if [[ -z "${BOARD_NAME}" ]] && [[ -n "${MODEL}" ]]; then
+    BOARD_NAME="${MODEL}"
+  fi
+
   summary
   if [[ "${YES}" != "1" ]]; then
     if [[ -t 0 ]]; then
@@ -292,7 +315,7 @@ main() {
     fi
   fi
   ./customize.sh "${FLASH}" "${MTDPARTS}" "${KERNEL_OFFSET}" "${RESET_PIN}" \
-                 "${SYSLED_PIN}" "${CPUFREQ}" "${RAMFREQ}" "${DDRPARM}" "${BAUDRATE}"
+                 "${SYSLED_PIN}" "${CPUFREQ}" "${RAMFREQ}" "${DDRPARM}" "${BAUDRATE}" "${MODEL}" "${BOARD_NAME}"
   echo "构建完成。若成功，产物位于 ./archive/。"
 }
 

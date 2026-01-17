@@ -1,0 +1,73 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="page_backup_title">Backup</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/main.js"></script>
+</head>
+
+<body onload="appInit('backup')">
+    <div id="m">
+        <h1 data-i18n="h_backup">BACKUP</h1>
+        <p id="hint">
+            <span data-i18n-html="hint_backup">Download a backup from device storage as a <strong>binary
+                    file</strong>.<br>
+                The backup data will be streamed to your browser and saved on your computer.</span>
+        </p>
+
+        <div class="backup-form">
+            <div class="form-row backup-inline-row" id="backup_mode_target_row">
+                <div class="form-pair">
+                    <label for="backup_mode" data-i18n="backup_label_mode">Mode:</label>
+                    <select id="backup_mode" class="field-control">
+                        <option value="part" data-i18n="backup_mode_part">Partition backup</option>
+                        <option value="range" data-i18n="backup_mode_range">Custom range</option>
+                    </select>
+                </div>
+
+                <div class="form-pair" id="backup_target_pair">
+                    <label for="backup_target" data-i18n="backup_label_target">Target:</label>
+                    <select id="backup_target" class="field-control"></select>
+                </div>
+            </div>
+
+            <div id="backup_range" style="display: none;">
+                <div class="form-row backup-inline-row" id="backup_range_row">
+                    <div class="form-pair">
+                        <label for="backup_start" data-i18n="backup_label_start">Start:</label>
+                        <input id="backup_start" class="field-control" type="text" placeholder="0x0 / 64KiB">
+                    </div>
+                    <div class="form-pair">
+                        <label for="backup_end" data-i18n="backup_label_end">End (exclusive):</label>
+                        <input id="backup_end" class="field-control" type="text" placeholder="0x1000 / 128KiB">
+                    </div>
+                </div>
+                <div id="backup_range_hint" class="backup-range-hint" data-i18n="backup_range_hint">Tip: input supports
+                    decimal, 0xHEX, and KiB suffix (e.g. 64KiB).</div>
+            </div>
+
+            <div class="form-row">
+                <button type="button" class="button" onclick="startBackup()"
+                    data-i18n="backup_btn_download">Download</button>
+            </div>
+        </div>
+
+        <div class="bar" id="bar" style="display: none; --percent: 0;"></div>
+        <div id="backup_status" style="display: none;"></div>
+
+        <div class="i w">
+            <strong data-i18n="other_warnings">WARNINGS</strong>
+            <ul>
+                <li data-i18n="backup_warn_1">do not power off the device during backup</li>
+                <li data-i18n="backup_warn_2">custom range reads raw bytes; be careful with offsets</li>
+                <li data-i18n="backup_warn_3">large backups may take a long time depending on storage speed</li>
+            </ul>
+        </div>
+    </div>
+    <div id="version"></div>
+</body>
+
+</html>

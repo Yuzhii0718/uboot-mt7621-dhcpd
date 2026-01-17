@@ -841,6 +841,94 @@ int write_uboot_failsafe(size_t data_addr, uint32_t data_size)
 	return CMD_RET_SUCCESS;
 }
 
+int write_factory_failsafe(size_t data_addr, uint32_t data_size)
+{
+	void *flash;
+	uint64_t part_off, part_size, tmp;
+	uint32_t erase_size;
+	int ret;
+	const char *part_name = "factory";
+
+	flash = mtk_board_get_flash_dev();
+	if (!flash)
+		return CMD_RET_FAILURE;
+
+	if (get_mtd_part_info(part_name, &part_off, &part_size)) {
+		part_name = "Factory";
+		if (get_mtd_part_info(part_name, &part_off, &part_size)) {
+			printf(COLOR_ERROR "*** MTD partition '%s' does not exist! ***" COLOR_NORMAL "\n",
+			       part_name);
+			return CMD_RET_FAILURE;
+		}
+	}
+
+	if (part_size < data_size) {
+		printf("\n" COLOR_ERROR "*** Error: factory image is larger than mtd partition '%s' ***" COLOR_NORMAL "\n",
+		       part_name);
+		printf(COLOR_ERROR "*** Operation Aborted! ***" COLOR_NORMAL "\n");
+		return CMD_RET_FAILURE;
+	}
+
+	tmp = part_off;
+	if (do_div(tmp, mtk_board_get_flash_erase_size(flash))) {
+		printf(COLOR_ERROR "*** MTD partition '%s' does not start on erase boundary! ***" COLOR_NORMAL "\n",
+		       part_name);
+		return CMD_RET_FAILURE;
+	}
+
+	erase_size = ALIGN(data_size, mtk_board_get_flash_erase_size(flash));
+	if (erase_size > part_size) {
+		printf("\n" COLOR_ERROR "*** Error: erase size exceeds mtd partition '%s' ***" COLOR_NORMAL "\n",
+		       part_name);
+		printf(COLOR_ERROR "*** Operation Aborted! ***" COLOR_NORMAL "\n");
+		return CMD_RET_FAILURE;
+	}
+
+	printf("\n");
+	printf("Erasing from 0x%llx to 0x%llx, size 0x%x ... ", part_off,
+	       part_off + erase_size - 1, erase_size);
+
+	ret = mtk_board_flash_erase(flash, part_off, erase_size);
+	if (ret) {
+		printf("Fail\n");
+		printf(COLOR_ERROR "*** Flash erasure [%llx-%llx] failed! ***" COLOR_NORMAL "\n",
+		       part_off, part_off + erase_size - 1);
+		return CMD_RET_FAILURE;
+	}
+
+	printf("OK\n");
+
+	printf("Writting from 0x%x to 0x%llx, size 0x%x ... ", data_addr,
+	       part_off, data_size);
+
+	ret = mtk_board_flash_write(flash, part_off, data_size,
+				    (void *)data_addr);
+	if (ret) {
+		printf("Fail\n");
+		printf(COLOR_ERROR "*** Flash program [%llx-%llx] failed! ***" COLOR_NORMAL "\n",
+		       part_off, part_off + data_size - 1);
+		return CMD_RET_FAILURE;
+	}
+
+	printf("OK\n");
+
+	printf("Verifying from 0x%llx to 0x%llx, size 0x%x ... ", part_off,
+	       part_off + data_size - 1, data_size);
+
+	ret = do_data_verify(flash, part_off, data_size, (void *)data_addr);
+	if (ret) {
+		printf("Fail\n");
+		printf(COLOR_ERROR "*** Flash verify [%llx-%llx] failed! ***" COLOR_NORMAL "\n",
+		       part_off, part_off + data_size - 1);
+		return CMD_RET_FAILURE;
+	}
+
+	printf("OK\n");
+	printf("\n" COLOR_PROMPT "*** Factory upgrade completed! ***" COLOR_NORMAL "\n");
+
+	return CMD_RET_SUCCESS;
+}
+
 int write_bootloader_failsafe(size_t data_addr, uint32_t data_size)
 {
 	void *flash;

@@ -118,7 +118,8 @@ jobs:
         working-directory: uboot-mt7621
         run: |
           ./customize.sh '${{ inputs.flash }}' '${{ inputs.mtdparts }}' '${{ inputs.kernel_offset }}' '${{ steps.gpio.outputs.reset_pin }}' \
-            '${{ steps.gpio.outputs.sysled_pin }}' '${{ inputs.cpufreq }}' '${{ inputs.ramfreq }}' '${{ inputs.ddrparam }}' '${{ inputs.baudrate }}'
+            '${{ steps.gpio.outputs.sysled_pin }}' '${{ inputs.cpufreq }}' '${{ inputs.ramfreq }}' '${{ inputs.ddrparam }}' '${{ inputs.baudrate }}' \
+            '${{ inputs.model }}' '${{ inputs.model }}'
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4
