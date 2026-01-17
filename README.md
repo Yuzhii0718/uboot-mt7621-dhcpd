@@ -1,6 +1,6 @@
 # MediaTek MT7621 U-Boot with Failsafe Mode
 
-![Web Recovery Page](WebRecovery.png)
+![Web Recovery Page](uboot.png)
 
 A modified version of DragonBluep's u-boot for mt7621 by Yuzhii.
 
@@ -12,6 +12,9 @@ Support functions and Features:
    - Auto dhcpd server
    - Support Web upgrade U-Boot
    - Can boot Initramfs firmware in Web
+   - Factory(RF) flash
+   - Backup partition and all flash
+   - Sysinfo display
 
 Support Actions to build automatically. 
 
