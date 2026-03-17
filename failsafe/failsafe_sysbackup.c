@@ -32,6 +32,56 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#ifdef CONFIG_MTD_NAND
+static void failsafe_trim_ascii(char *dst, size_t dst_sz, const u8 *src, size_t src_sz)
+{
+	size_t i, end;
+
+	if (!dst || !dst_sz)
+		return;
+
+	dst[0] = '\0';
+	if (!src || !src_sz)
+		return;
+
+	end = src_sz;
+	while (end && (src[end - 1] == ' ' || src[end - 1] == '\0'))
+		end--;
+
+	for (i = 0; i < end && i + 1 < dst_sz; i++)
+		dst[i] = (char)src[i];
+	dst[i] = '\0';
+}
+
+static void failsafe_get_nand_model(struct nand_chip *chip, char *out, size_t out_sz)
+{
+	char manuf[13];
+	char model[21];
+
+	if (!out || !out_sz)
+		return;
+
+	out[0] = '\0';
+
+	if (!chip || memcmp(chip->onfi_params.sig, "ONFI", 4))
+		return;
+
+	failsafe_trim_ascii(manuf, sizeof(manuf),
+		(const u8 *)chip->onfi_params.manufacturer,
+		sizeof(chip->onfi_params.manufacturer));
+	failsafe_trim_ascii(model, sizeof(model),
+		(const u8 *)chip->onfi_params.model,
+		sizeof(chip->onfi_params.model));
+
+	if (manuf[0] && model[0])
+		snprintf(out, out_sz, "%s %s", manuf, model);
+	else if (model[0])
+		strlcpy(out, model, out_sz);
+	else if (manuf[0])
+		strlcpy(out, manuf, out_sz);
+}
+#endif
+
 static size_t json_escape(char *dst, size_t dst_sz, const char *src)
 {
 	size_t di = 0;
@@ -385,7 +435,6 @@ void sysinfo_handler(enum httpd_uri_handler_status status,
 
 	mtd = get_mtd_device_nm(master_name);
 	if (!IS_ERR(mtd)) {
-		int master_is_nand = !strncmp(master_name, "nand", 4);
 		int master_is_nmbm = !strncmp(master_name, "nmbm", 4);
 
 		json_escape(esc_raw_name, sizeof(esc_raw_name), "");
@@ -400,38 +449,11 @@ void sysinfo_handler(enum httpd_uri_handler_status status,
 				strlcpy(flash_model, sf->name, sizeof(flash_model));
 		}
 #ifdef CONFIG_MTD_NAND
-		if (!flash_model[0] && master_is_nand && nand_mtd_to_devnum(mtd) >= 0) {
+		if (!flash_model[0] && !strncmp(master_name, "nand", 4) &&
+		    nand_mtd_to_devnum(mtd) >= 0) {
 			struct nand_chip *chip = mtd_to_nand(mtd);
-			if (chip && !memcmp(chip->onfi_params.sig, "ONFI", 4)) {
-				char manuf[13];
-				char model[21];
-				size_t i, end;
 
-				memset(manuf, 0, sizeof(manuf));
-				memset(model, 0, sizeof(model));
-				end = sizeof(chip->onfi_params.manufacturer);
-				while (end && (chip->onfi_params.manufacturer[end - 1] == ' ' ||
-						chip->onfi_params.manufacturer[end - 1] == '\0'))
-					end--;
-				for (i = 0; i < end && i + 1 < sizeof(manuf); i++)
-					manuf[i] = chip->onfi_params.manufacturer[i];
-				manuf[i] = '\0';
-
-				end = sizeof(chip->onfi_params.model);
-				while (end && (chip->onfi_params.model[end - 1] == ' ' ||
-						chip->onfi_params.model[end - 1] == '\0'))
-					end--;
-				for (i = 0; i < end && i + 1 < sizeof(model); i++)
-					model[i] = chip->onfi_params.model[i];
-				model[i] = '\0';
-
-				if (manuf[0] && model[0])
-					snprintf(flash_model, sizeof(flash_model), "%s %s", manuf, model);
-				else if (model[0])
-					strlcpy(flash_model, model, sizeof(flash_model));
-				else if (manuf[0])
-					strlcpy(flash_model, manuf, sizeof(flash_model));
-			}
+			failsafe_get_nand_model(chip, flash_model, sizeof(flash_model));
 			if (!flash_model[0] && mtd->name && mtd->name[0])
 				strlcpy(flash_model, mtd->name, sizeof(flash_model));
 		}
@@ -484,36 +506,7 @@ void sysinfo_handler(enum httpd_uri_handler_status status,
 
 						cand_model[0] = '\0';
 						chip = mtd_to_nand(cand);
-						if (chip && !memcmp(chip->onfi_params.sig, "ONFI", 4)) {
-							char manuf[13];
-							char model[21];
-							size_t i, end;
-
-							memset(manuf, 0, sizeof(manuf));
-							memset(model, 0, sizeof(model));
-							end = sizeof(chip->onfi_params.manufacturer);
-							while (end && (chip->onfi_params.manufacturer[end - 1] == ' ' ||
-									chip->onfi_params.manufacturer[end - 1] == '\0'))
-								end--;
-							for (i = 0; i < end && i + 1 < sizeof(manuf); i++)
-								manuf[i] = chip->onfi_params.manufacturer[i];
-							manuf[i] = '\0';
-
-							end = sizeof(chip->onfi_params.model);
-							while (end && (chip->onfi_params.model[end - 1] == ' ' ||
-									chip->onfi_params.model[end - 1] == '\0'))
-								end--;
-							for (i = 0; i < end && i + 1 < sizeof(model); i++)
-								model[i] = chip->onfi_params.model[i];
-							model[i] = '\0';
-
-							if (manuf[0] && model[0])
-								snprintf(cand_model, sizeof(cand_model), "%s %s", manuf, model);
-							else if (model[0])
-								strlcpy(cand_model, model, sizeof(cand_model));
-							else if (manuf[0])
-								strlcpy(cand_model, manuf, sizeof(cand_model));
-						}
+						failsafe_get_nand_model(chip, cand_model, sizeof(cand_model));
 
 						if (!cand_model[0] && cand->name && cand->name[0])
 							strlcpy(cand_model, cand->name, sizeof(cand_model));
@@ -537,36 +530,7 @@ void sysinfo_handler(enum httpd_uri_handler_status status,
 
 			if (lower && !IS_ERR(lower) && nand_mtd_to_devnum(lower) >= 0) {
 				chip = mtd_to_nand(lower);
-				if (chip && !memcmp(chip->onfi_params.sig, "ONFI", 4)) {
-					char manuf[13];
-					char model[21];
-					size_t i, end;
-
-					memset(manuf, 0, sizeof(manuf));
-					memset(model, 0, sizeof(model));
-					end = sizeof(chip->onfi_params.manufacturer);
-					while (end && (chip->onfi_params.manufacturer[end - 1] == ' ' ||
-							chip->onfi_params.manufacturer[end - 1] == '\0'))
-						end--;
-					for (i = 0; i < end && i + 1 < sizeof(manuf); i++)
-						manuf[i] = chip->onfi_params.manufacturer[i];
-					manuf[i] = '\0';
-
-					end = sizeof(chip->onfi_params.model);
-					while (end && (chip->onfi_params.model[end - 1] == ' ' ||
-							chip->onfi_params.model[end - 1] == '\0'))
-						end--;
-					for (i = 0; i < end && i + 1 < sizeof(model); i++)
-						model[i] = chip->onfi_params.model[i];
-					model[i] = '\0';
-
-					if (manuf[0] && model[0])
-						snprintf(flash_model, sizeof(flash_model), "%s %s", manuf, model);
-					else if (model[0])
-						strlcpy(flash_model, model, sizeof(flash_model));
-					else if (manuf[0])
-						strlcpy(flash_model, manuf, sizeof(flash_model));
-				}
+				failsafe_get_nand_model(chip, flash_model, sizeof(flash_model));
 				if (!flash_model[0] && lower->name && lower->name[0])
 					strlcpy(flash_model, lower->name, sizeof(flash_model));
 
@@ -575,36 +539,7 @@ void sysinfo_handler(enum httpd_uri_handler_status status,
 				{
 					char raw_model[128];
 					raw_model[0] = '\0';
-					if (chip && !memcmp(chip->onfi_params.sig, "ONFI", 4)) {
-						char manuf[13];
-						char model[21];
-						size_t i, end;
-
-						memset(manuf, 0, sizeof(manuf));
-						memset(model, 0, sizeof(model));
-						end = sizeof(chip->onfi_params.manufacturer);
-						while (end && (chip->onfi_params.manufacturer[end - 1] == ' ' ||
-								chip->onfi_params.manufacturer[end - 1] == '\0'))
-							end--;
-						for (i = 0; i < end && i + 1 < sizeof(manuf); i++)
-							manuf[i] = chip->onfi_params.manufacturer[i];
-						manuf[i] = '\0';
-
-						end = sizeof(chip->onfi_params.model);
-						while (end && (chip->onfi_params.model[end - 1] == ' ' ||
-								chip->onfi_params.model[end - 1] == '\0'))
-							end--;
-						for (i = 0; i < end && i + 1 < sizeof(model); i++)
-							model[i] = chip->onfi_params.model[i];
-						model[i] = '\0';
-
-						if (manuf[0] && model[0])
-							snprintf(raw_model, sizeof(raw_model), "%s %s", manuf, model);
-						else if (model[0])
-							strlcpy(raw_model, model, sizeof(raw_model));
-						else if (manuf[0])
-							strlcpy(raw_model, manuf, sizeof(raw_model));
-					}
+					failsafe_get_nand_model(chip, raw_model, sizeof(raw_model));
 					if (!raw_model[0] && lower->name && lower->name[0])
 						strlcpy(raw_model, lower->name, sizeof(raw_model));
 					json_escape(esc_raw_model, sizeof(esc_raw_model), raw_model);
