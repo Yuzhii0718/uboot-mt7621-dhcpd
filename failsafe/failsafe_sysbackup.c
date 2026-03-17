@@ -868,6 +868,49 @@ struct backup_session {
 	size_t buf_size;
 };
 
+static void backup_set_std_response(struct httpd_response *response,
+	int code, const char *msg)
+{
+	const char *text = msg ? msg : "error";
+
+	response->status = HTTP_RESP_STD;
+	response->data = text;
+	response->size = strlen(text);
+	response->info.code = code;
+	response->info.connection_close = 1;
+	response->info.content_type = "text/plain";
+}
+
+static struct backup_session *backup_alloc_session(void)
+{
+	struct backup_session *st;
+
+	st = calloc(1, sizeof(*st));
+	if (!st)
+		return NULL;
+
+	st->buf_size = 4096;
+	st->buf = malloc(st->buf_size);
+	if (!st->buf) {
+		free(st);
+		return NULL;
+	}
+
+	return st;
+}
+
+static void backup_free_session(struct backup_session *st)
+{
+	if (!st)
+		return;
+
+	if (st->mtd && !IS_ERR(st->mtd))
+		put_mtd_device(st->mtd);
+
+	free(st->buf);
+	free(st);
+}
+
 void backup_handler(enum httpd_uri_handler_status status,
 	struct httpd_request *request,
 	struct httpd_response *response)
@@ -898,22 +941,12 @@ void backup_handler(enum httpd_uri_handler_status status,
 		target = httpd_request_find_value(request, "target");
 
 		if (!mode || !mode->data) {
-			response->status = HTTP_RESP_STD;
-			response->data = "bad request";
-			response->size = strlen(response->data);
-			response->info.code = 400;
-			response->info.connection_close = 1;
-			response->info.content_type = "text/plain";
+			backup_set_std_response(response, 400, "bad request");
 			return;
 		}
 
 		if (!target || !target->data) {
-			response->status = HTTP_RESP_STD;
-			response->data = "bad request";
-			response->size = strlen(response->data);
-			response->info.code = 400;
-			response->info.connection_close = 1;
-			response->info.content_type = "text/plain";
+			backup_set_std_response(response, 400, "bad request");
 			return;
 		}
 
@@ -922,49 +955,20 @@ void backup_handler(enum httpd_uri_handler_status status,
 			const char *devname = tgt + 7;
 
 			if (!devname[0]) {
-				response->status = HTTP_RESP_STD;
-				response->data = "bad request";
-				response->size = strlen(response->data);
-				response->info.code = 400;
-				response->info.connection_close = 1;
-				response->info.content_type = "text/plain";
+				backup_set_std_response(response, 400, "bad request");
 				return;
 			}
 
-			st = calloc(1, sizeof(*st));
+			st = backup_alloc_session();
 			if (!st) {
-				response->status = HTTP_RESP_STD;
-				response->data = "oom";
-				response->size = strlen(response->data);
-				response->info.code = 500;
-				response->info.connection_close = 1;
-				response->info.content_type = "text/plain";
-				return;
-			}
-
-			st->buf_size = 4096;
-			st->buf = malloc(st->buf_size);
-			if (!st->buf) {
-				free(st);
-				response->status = HTTP_RESP_STD;
-				response->data = "oom";
-				response->size = strlen(response->data);
-				response->info.code = 500;
-				response->info.connection_close = 1;
-				response->info.content_type = "text/plain";
+				backup_set_std_response(response, 500, "oom");
 				return;
 			}
 
 			st->mtd = get_mtd_device_nm(devname);
 			if (IS_ERR(st->mtd)) {
-				free(st->buf);
-				free(st);
-				response->status = HTTP_RESP_STD;
-				response->data = "mtd not found";
-				response->size = strlen(response->data);
-				response->info.code = 404;
-				response->info.connection_close = 1;
-				response->info.content_type = "text/plain";
+				backup_free_session(st);
+				backup_set_std_response(response, 404, "mtd not found");
 				return;
 			}
 
@@ -979,15 +983,8 @@ void backup_handler(enum httpd_uri_handler_status status,
 				    parse_u64_len(start->data, &rs) ||
 				    parse_u64_len(end->data, &re) ||
 				    re <= rs || re > st->mtd->size) {
-					put_mtd_device(st->mtd);
-					free(st->buf);
-					free(st);
-					response->status = HTTP_RESP_STD;
-					response->data = "bad range";
-					response->size = strlen(response->data);
-					response->info.code = 400;
-					response->info.connection_close = 1;
-					response->info.content_type = "text/plain";
+					backup_free_session(st);
+					backup_set_std_response(response, 400, "bad range");
 					return;
 				}
 				st->start = rs;
@@ -1022,47 +1019,19 @@ void backup_handler(enum httpd_uri_handler_status status,
 		}
 
 		if (strncmp(tgt, "mtd:", 4)) {
-			response->status = HTTP_RESP_STD;
-			response->data = "unsupported target";
-			response->size = strlen(response->data);
-			response->info.code = 400;
-			response->info.connection_close = 1;
-			response->info.content_type = "text/plain";
+			backup_set_std_response(response, 400, "unsupported target");
 			return;
 		}
 
 		part = tgt + 4;
 		if (!part[0]) {
-			response->status = HTTP_RESP_STD;
-			response->data = "no part";
-			response->size = strlen(response->data);
-			response->info.code = 400;
-			response->info.connection_close = 1;
-			response->info.content_type = "text/plain";
+			backup_set_std_response(response, 400, "no part");
 			return;
 		}
 
-		st = calloc(1, sizeof(*st));
+		st = backup_alloc_session();
 		if (!st) {
-			response->status = HTTP_RESP_STD;
-			response->data = "oom";
-			response->size = strlen(response->data);
-			response->info.code = 500;
-			response->info.connection_close = 1;
-			response->info.content_type = "text/plain";
-			return;
-		}
-
-		st->buf_size = 4096;
-		st->buf = malloc(st->buf_size);
-		if (!st->buf) {
-			free(st);
-			response->status = HTTP_RESP_STD;
-			response->data = "oom";
-			response->size = strlen(response->data);
-			response->info.code = 500;
-			response->info.connection_close = 1;
-			response->info.content_type = "text/plain";
+			backup_set_std_response(response, 500, "oom");
 			return;
 		}
 
@@ -1102,15 +1071,8 @@ void backup_handler(enum httpd_uri_handler_status status,
 					    parse_u64_len(start->data, &rel_start) ||
 					    parse_u64_len(end->data, &rel_end) ||
 					    rel_end <= rel_start || rel_end > part_size) {
-						put_mtd_device(st->mtd);
-						free(st->buf);
-						free(st);
-						response->status = HTTP_RESP_STD;
-						response->data = "bad range";
-						response->size = strlen(response->data);
-						response->info.code = 400;
-						response->info.connection_close = 1;
-						response->info.content_type = "text/plain";
+						backup_free_session(st);
+						backup_set_std_response(response, 400, "bad range");
 						return;
 					}
 					st->start = part_off + rel_start;
@@ -1148,14 +1110,8 @@ void backup_handler(enum httpd_uri_handler_status status,
 
 		st->mtd = get_mtd_device_nm(part);
 		if (IS_ERR(st->mtd)) {
-			free(st->buf);
-			free(st);
-			response->status = HTTP_RESP_STD;
-			response->data = "mtd not found";
-			response->size = strlen(response->data);
-			response->info.code = 404;
-			response->info.connection_close = 1;
-			response->info.content_type = "text/plain";
+			backup_free_session(st);
+			backup_set_std_response(response, 404, "mtd not found");
 			return;
 		}
 
@@ -1169,15 +1125,8 @@ void backup_handler(enum httpd_uri_handler_status status,
 			    parse_u64_len(start->data, &st->start) ||
 			    parse_u64_len(end->data, &st->end) ||
 			    st->end <= st->start || st->end > st->mtd->size) {
-				put_mtd_device(st->mtd);
-				free(st->buf);
-				free(st);
-				response->status = HTTP_RESP_STD;
-				response->data = "bad range";
-				response->size = strlen(response->data);
-				response->info.code = 400;
-				response->info.connection_close = 1;
-				response->info.content_type = "text/plain";
+				backup_free_session(st);
+				backup_set_std_response(response, 400, "bad range");
 				return;
 			}
 		}
@@ -1244,11 +1193,7 @@ void backup_handler(enum httpd_uri_handler_status status,
 		if (!st)
 			return;
 
-		if (st->mtd && !IS_ERR(st->mtd))
-			put_mtd_device(st->mtd);
-
-		free(st->buf);
-		free(st);
+		backup_free_session(st);
 		response->session_data = NULL;
 	}
 #endif
