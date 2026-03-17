@@ -249,8 +249,11 @@ static const char *failsafe_get_mtdparts(void)
 	const char *s;
 
 	s = env_get("mtdparts");
-	if (s && s[0])
+	if (s && s[0]) {
+		if (!strncmp(s, "mtdparts=", 9))
+			return s + 9;
 		return s;
+	}
 
 #ifdef CONFIG_MTDPARTS_DEFAULT
 	s = CONFIG_MTDPARTS_DEFAULT;
@@ -268,8 +271,11 @@ static const char *failsafe_get_mtdids(void)
 	const char *s;
 
 	s = env_get("mtdids");
-	if (s && s[0])
+	if (s && s[0]) {
+		if (!strncmp(s, "mtdids=", 7))
+			return s + 7;
 		return s;
+	}
 
 #ifdef CONFIG_MTDIDS_DEFAULT
 	s = CONFIG_MTDIDS_DEFAULT;
@@ -544,8 +550,20 @@ static void sysinfo_handler(enum httpd_uri_handler_status status,
 	}
 	#endif
 	if (!master_name[0]) {
-		/* fallback */
-		strlcpy(master_name, "nmbm0", sizeof(master_name));
+		/* fallback: probe known master device names */
+		static const char *names[] = { "nmbm0", "nand0", "nor0", "onenand0" };
+		size_t i;
+
+		for (i = 0; i < ARRAY_SIZE(names); i++) {
+			struct mtd_info *probe = get_mtd_device_nm(names[i]);
+
+			if (IS_ERR(probe))
+				continue;
+
+			strlcpy(master_name, names[i], sizeof(master_name));
+			put_mtd_device(probe);
+			break;
+		}
 	}
 
 	mtd = get_mtd_device_nm(master_name);
