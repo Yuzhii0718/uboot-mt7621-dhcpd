@@ -1,0 +1,72 @@
+name: Build u-boot by board
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: '设备型号'
+        required: true
+        type: string
+        default: 'zte_e8820s'
+
+jobs:
+  build:
+    name: Build MT7621 u-boot
+    runs-on: ubuntu-22.04
+    strategy:
+       fail-fast: False
+
+    steps:
+      - name: Checkout master directory
+        uses: actions/checkout@v4
+        with:
+          path: uboot-mt7621
+
+      - name: Install essential packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install swig python2-dev
+          echo 'switch to python2 as default'
+          sudo rm /usr/bin/python
+          sudo ln -s /usr/bin/python2 /usr/bin/python
+
+      - name: Download OpenWrt toolchain
+        run: |
+          wget -O - https://github.com/DragonBluep/uboot-mt7621/releases/download/20230517/openwrt-toolchain-ramips-mt7621_gcc-12.3.0_musl.Linux-x86_64.tar.xz \
+            | tar --xz -xf -
+
+      - name: Compile
+        working-directory: uboot-mt7621
+        run: |
+          BOARD=${{ inputs.model }} ./build.sh
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.model }}-uboot
+          path: "uboot-mt7621/archive/"
+      
+      - name: Generate timestamp
+        id: timestamp
+        run: echo "now=$(date +'%Y-%m-%d-%H-%M')" >> $GITHUB_OUTPUT
+
+      - name: rename uboot-mt7621
+        run: |
+          for file in uboot-mt7621/archive/*; do
+            filename=$(basename "$file")
+            extension="${filename##*.}"
+            name="${filename%.*}"
+            mv "$file" "uboot-mt7621/archive/${name}-${{ steps.timestamp.outputs.now }}.${extension}"
+          done
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: BOARD-${{ inputs.model }}-${{ steps.timestamp.outputs.now }}
+          body: |
+            ## 构建参数
+            - 设备型号: ${{ inputs.model }}
+          files: uboot-mt7621/archive/*
+          tag_name: ${{ inputs.model }}-${{ steps.timestamp.outputs.now }}

@@ -18,12 +18,11 @@ command -v python2.7
 
 cd $(dirname "$0")
 
-echo "======================================================================"
-echo "Clean old build configurations..."
-echo "======================================================================"
-
 # Clean mt7621_build_defconfig before generating new one
 if [ -f "configs/mt7621_build_defconfig" ]; then
+	echo "======================================================================"
+	echo "Clean old build configurations..."
+	echo "======================================================================"
 	echo "Removing old mt7621_build_defconfig"
 	rm configs/mt7621_build_defconfig
 fi

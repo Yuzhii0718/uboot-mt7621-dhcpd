@@ -140,7 +140,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: ${{ inputs.model }}-${{ steps.timestamp.outputs.now }}
+          name: CUSTOM-${{ inputs.model }}-${{ steps.timestamp.outputs.now }}
           body: |
             ## 构建参数
             - 设备型号: ${{ inputs.model }}
