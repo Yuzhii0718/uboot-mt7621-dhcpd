@@ -126,14 +126,14 @@ jobs:
         id: timestamp
         run: echo "now=$(date +'%Y-%m-%d-%H-%M')" >> $GITHUB_OUTPUT
 
-      - name: rename uboot-mt7621
+      - name: rename output files
         run: |
-          BIN_PATH=$(ls uboot-mt7621/archive/u-boot-mt7621_md5-*.bin)
-          IMG_PATH=$(ls uboot-mt7621/archive/u-boot_md5-*.img)
-          MD5BIN=$(echo "$BIN_PATH" | sed -E 's/.*md5-([a-f0-9]+)\.bin$/\1/')
-          MD5IMG=$(echo "$IMG_PATH" | sed -E 's/.*md5-([a-f0-9]+)\.img$/\1/')
-          mv "$BIN_PATH" "uboot-mt7621/archive/${{ inputs.model }}_u-boot-mt7621_md5-${MD5BIN}-${{ steps.timestamp.outputs.now }}.bin"
-          mv "$IMG_PATH" "uboot-mt7621/archive/${{ inputs.model }}_u-boot_md5-${MD5IMG}-${{ steps.timestamp.outputs.now }}.img"
+          for file in uboot-mt7621/archive/*; do
+            filename=$(basename "$file")
+            extension="${filename##*.}"
+            name="${filename%.*}"
+            mv "$file" "uboot-mt7621/archive/${name}-${{ steps.timestamp.outputs.now }}.${extension}"
+          done
 
       - name: Create Release
         uses: softprops/action-gh-release@v1

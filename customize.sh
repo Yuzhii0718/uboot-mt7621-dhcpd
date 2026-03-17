@@ -170,6 +170,9 @@ elif [ -n "${BOARD_MODEL}" ]; then
 	echo "CONFIG_WEBUI_FAILSAFE_BOARD_NAME=\"${MODEL_ESC}\"" >> ${DEFCONFIG}
 fi
 
+BOARD_INFO="${BOARD_NAME:-${BOARD_MODEL:-custom-board}}"
+BOARD_TAG=$(echo "${BOARD_INFO}" | tr ' /\\:' '____' | tr -cd '[:alnum:]_.-')
+
 echo "======================================================================"
 echo "Building..."
 echo "======================================================================"
@@ -180,15 +183,15 @@ make savedefconfig
 if [ ! -d "archive" ]; then
 	mkdir archive
 fi
-cat defconfig > archive/mt7621_defconfig
+cat defconfig > archive/mt7621_${BOARD_TAG}_defconfig
 MD5SUMBIN=$(md5sum u-boot-mt7621.bin | awk '{print $1}')
 echo "u-boot-mt7621.bin md5sum: ${MD5SUMBIN}"
-mv u-boot-mt7621.bin archive/u-boot-mt7621_md5-${MD5SUMBIN}.bin
-echo "Output:  archive/u-boot-mt7621_md5-${MD5SUMBIN}.bin"
+mv u-boot-mt7621.bin archive/u-boot-mt7621_${BOARD_TAG}_md5-${MD5SUMBIN}.bin
+echo "Output:  archive/u-boot-mt7621_${BOARD_TAG}_md5-${MD5SUMBIN}.bin"
 MD5SUMIMG=$(md5sum u-boot.img | awk '{print $1}')
 echo "u-boot.img md5sum: ${MD5SUMIMG}"
-mv u-boot.img archive/u-boot_md5-${MD5SUMIMG}.img
-echo "Output:  archive/u-boot_md5-${MD5SUMIMG}.img"
+mv u-boot.img archive/u-boot_${BOARD_TAG}_md5-${MD5SUMIMG}.img
+echo "Output:  archive/u-boot_${BOARD_TAG}_md5-${MD5SUMIMG}.img"
 
 echo "======================================================================"
 echo "Cleaning up..."
