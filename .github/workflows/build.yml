@@ -38,7 +38,8 @@ jobs:
       - name: Compile
         working-directory: uboot-mt7621
         run: |
-          BOARD=${{ inputs.model }} ./build.sh
+          mkdir -p archive
+          BOARD=${{ inputs.model }} ./build.sh | tee "archive/${{ inputs.model }}-build.log"
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4
