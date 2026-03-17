@@ -4,6 +4,6 @@ ifeq ($(CONFIG_SPL_BUILD),)
 
 obj-y += fsdata/
 
-obj-y += fs.o failsafe.o
+obj-y += fs.o failsafe.o failsafe_sysbackup.o
 
 endif
