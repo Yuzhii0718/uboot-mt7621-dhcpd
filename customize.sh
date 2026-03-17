@@ -27,11 +27,6 @@ if [ -f "configs/mt7621_build_defconfig" ]; then
 	echo "Removing old mt7621_build_defconfig"
 	rm configs/mt7621_build_defconfig
 fi
-if [ -f "include/configs/mt7621-common.h" ]; then
-	# remove the reset button and system led related config in mt7621-common.h
-	echo "Removing old reset button and system led config in mt7621-common.h"
-	sed -i '/__CONFIG_MT7621_RESET_LED/,/#endif/d' include/configs/mt7621-common.h
-fi
 
 echo "======================================================================"
 echo "Configuring build..."
@@ -77,23 +72,20 @@ else
 	echo "CONFIG_DEFAULT_NAND_KERNEL_OFFSET=$3" >> ${DEFCONFIG}
 fi
 
-echo -e "#ifndef __CONFIG_MT7621_RESET_LED\n#define __CONFIG_MT7621_RESET_LED" \
-	>> ./include/configs/mt7621-common.h
 if [ "$4" -ge 0 -a "$4" -le 48 ]; then
 	echo "set reset button pin: $4"
 	echo "CONFIG_FAILSAFE_ON_BUTTON=y" >> ${DEFCONFIG}
-	echo "#define MT7621_BUTTON_RESET $4" >> ./include/configs/mt7621-common.h
+	echo "CONFIG_MT7621_BUTTON_RESET=$4" >> ${DEFCONFIG}
 else
 	echo "Reset button is disabled!"
 fi
 
 if [ "$5" -ge 0 -a "$5" -le 48 ]; then
 	echo "set system led pin: $5"
-	echo "#define MT7621_LED_STATUS1 $5" >> ./include/configs/mt7621-common.h
+	echo "CONFIG_MT7621_LED_STATUS1=$5" >> ${DEFCONFIG}
 else
 	echo "System LED is disabled!"
 fi
-echo "#endif" >> ./include/configs/mt7621-common.h
 
 if [ "$6" -ge 400 -a "$6" -le 1200 ]; then
 	echo "set CPU frequency: $6 MHz"
@@ -206,9 +198,4 @@ echo "======================================================================"
 if [ -f "configs/mt7621_build_defconfig" ]; then
 	echo "Removing mt7621_build_defconfig"
 	rm configs/mt7621_build_defconfig
-fi
-if [ -f "include/configs/mt7621-common.h" ]; then
-	# remove the reset button and system led related config in mt7621-common.h
-	echo "Removing old reset button and system led config in mt7621-common.h"
-	sed -i '/__CONFIG_MT7621_RESET_LED/,/#endif/d' include/configs/mt7621-common.h
 fi
