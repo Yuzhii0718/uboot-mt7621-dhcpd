@@ -66,7 +66,7 @@ on:
         description: '使用旧DDR时序参数'
         required: true
         type: boolean
-        default: 'false'
+        default: false
       baudrate:
         description: '波特率'
         required: true
@@ -102,11 +102,6 @@ jobs:
           wget -O - https://github.com/DragonBluep/uboot-mt7621/releases/download/20230517/openwrt-toolchain-ramips-mt7621_gcc-12.3.0_musl.Linux-x86_64.tar.xz \
             | tar --xz -xf -
 
-      - name: Set old DDR timing parameters
-        if:  ${{ inputs.oldparam }}
-        working-directory: uboot-mt7621
-        run: sed -i 's/0x0C000000/0x0A000000/g' ./arch/mips/mach-mt7621/dramc-legacy/dramc.S
-
       - name: Parse GPIO config
         id: gpio
         run: |
@@ -119,7 +114,7 @@ jobs:
         run: |
           ./customize.sh '${{ inputs.flash }}' '${{ inputs.mtdparts }}' '${{ inputs.kernel_offset }}' '${{ steps.gpio.outputs.reset_pin }}' \
             '${{ steps.gpio.outputs.sysled_pin }}' '${{ inputs.cpufreq }}' '${{ inputs.ramfreq }}' '${{ inputs.ddrparam }}' '${{ inputs.baudrate }}' \
-            '${{ inputs.model }}' '${{ inputs.model }}'
+            '${{ inputs.model }}' '${{ inputs.model }}' '${{ inputs.oldparam }}'
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4

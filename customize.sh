@@ -49,6 +49,7 @@ echo "======================================================================"
 # $9	string: baud rate
 # $10	string: board model (optional)
 # $11	string: board name/id (optional)
+# $12	string: use old DDR timing parameters (true/false, optional)
 
 echo "Parse flash type: $1"
 # simple check if partition table is valid
@@ -149,6 +150,17 @@ fi
 
 BOARD_MODEL="${10-}"
 BOARD_NAME="${11-}"
+OLDPARAM="${12-false}"
+
+case "${OLDPARAM,,}" in
+true|1|yes|y)
+	echo "Enable old DDR timing parameters"
+	echo "CONFIG_MT7621_DRAM_DDR3_OLDPARAM_LEGACY=y" >> ${DEFCONFIG}
+	;;
+*)
+	: # keep default new parameters
+	;;
+esac
 
 if [ -n "${BOARD_MODEL}" ]; then
 	MODEL_ESC=${BOARD_MODEL//\"/\\\"}

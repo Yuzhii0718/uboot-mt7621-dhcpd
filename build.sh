@@ -20,6 +20,7 @@ SYSLED_PIN="-1"
 CPUFREQ=""
 RAMFREQ=""
 DDRPARM=""
+OLDPARAM="false"
 BAUDRATE="${DEFAULT_BAUDRATE}"
 YES="0"
 
@@ -57,6 +58,7 @@ Options:
   --cpufreq INT                   CPU 频率 MHz（400-1200）
   --ramfreq {400|800|1066|1200}   DRAM 速率 MT/s
   --ddrparam NAME                 DDR 参数（从内置列表选择之一或自定义）
+  --oldparam {true|false}         使用旧 DDR 时序参数（默认 false）
   --baudrate {57600|115200}       串口速率（默认 115200）
   --model STRING                  设备型号/版型（可选，会写入 failsafe sysinfo 兜底）
   --board-name STRING             设备名称/代号（可选，默认同 --model）
@@ -74,6 +76,7 @@ Options:
     --cpufreq 1000 \
     --ramfreq 1200 \
     --ddrparam DDR3-512MiB \
+    --oldparam false \
     --baudrate 115200 \
     --yes
 EOF
@@ -125,6 +128,7 @@ parse_args() {
       --cpufreq) CPUFREQ="$2"; shift 2;;
       --ramfreq) RAMFREQ="$2"; shift 2;;
       --ddrparam) DDRPARM="$2"; shift 2;;
+      --oldparam) OLDPARAM="$2"; shift 2;;
       --baudrate) BAUDRATE="$2"; shift 2;;
       --model) MODEL="$2"; shift 2;;
       --board-name) BOARD_NAME="$2"; shift 2;;
@@ -262,6 +266,11 @@ validate() {
     400|800|1066|1200) :;;
     *) echo "错误: ramfreq 仅支持 400/800/1066/1200"; exit 1;;
   esac
+  # old DDR 参数开关
+  case "${OLDPARAM,,}" in
+    true|false|1|0|yes|no|y|n) :;;
+    *) echo "错误: oldparam 仅支持 true/false"; exit 1;;
+  esac
   # 波特率
   case "${BAUDRATE}" in
     57600|115200) :;;
@@ -304,6 +313,10 @@ interactive() {
   else
     DDRPARM="${ddrsel}"
   fi
+  # old DDR 参数开关
+  local oldsel
+  oldsel=$(select_with_default "是否使用旧 DDR 时序参数：" "false" false true)
+  OLDPARAM="${oldsel}"
   # 波特率
   local brsel=$(select_with_default "选择串口波特率：" "115200" 57600 115200)
   BAUDRATE="${brsel}"
@@ -322,7 +335,7 @@ summary() {
 ======================================================================
 将执行：
   ./customize.sh '${FLASH}' '${MTDPARTS}' '${KERNEL_OFFSET}' '${RESET_PIN}' \
-  '${SYSLED_PIN}' '${CPUFREQ}' '${RAMFREQ}' '${DDRPARM}' '${BAUDRATE}' '${MODEL}' '${BOARD_NAME}'
+  '${SYSLED_PIN}' '${CPUFREQ}' '${RAMFREQ}' '${DDRPARM}' '${BAUDRATE}' '${MODEL}' '${BOARD_NAME}' '${OLDPARAM}'
 EOF
 }
 
@@ -364,7 +377,7 @@ main() {
     fi
   fi
   ./customize.sh "${FLASH}" "${MTDPARTS}" "${KERNEL_OFFSET}" "${RESET_PIN}" \
-                 "${SYSLED_PIN}" "${CPUFREQ}" "${RAMFREQ}" "${DDRPARM}" "${BAUDRATE}" "${MODEL}" "${BOARD_NAME}"
+                 "${SYSLED_PIN}" "${CPUFREQ}" "${RAMFREQ}" "${DDRPARM}" "${BAUDRATE}" "${MODEL}" "${BOARD_NAME}" "${OLDPARAM}"
   echo "======================================================================"
   echo "构建完成。若成功，产物位于 ./archive/ 。"
 }
