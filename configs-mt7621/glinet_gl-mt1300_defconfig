@@ -1,0 +1,12 @@
+--flash NOR
+--mtdparts "192k(u-boot),64k(u-boot-env),64k(factory),-(firmware)"
+--model "GL.iNet_GL-MT1300"
+--kernel-offset 0x50000
+--reset-pin 18
+--sysled-pin 14
+--cpufreq 880
+--ramfreq 1200
+--ddrparam DDR3-256MiB
+--oldparam false
+--baudrate 115200
+--yes

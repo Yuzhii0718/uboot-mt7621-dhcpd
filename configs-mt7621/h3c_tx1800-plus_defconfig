@@ -1,0 +1,12 @@
+--flash NMBM
+--mtdparts "512k(u-boot),512k(u-boot-env),512k(exp),512k(factory),-(firmware)"
+--model "H3C_TX1800_Plus"
+--kernel-offset 0x200000
+--reset-pin 13
+--sysled-pin 15
+--cpufreq 880
+--ramfreq 1200
+--ddrparam DDR3-256MiB
+--oldparam false
+--baudrate 115200
+--yes

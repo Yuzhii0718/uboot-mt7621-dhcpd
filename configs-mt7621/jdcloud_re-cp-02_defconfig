@@ -1,0 +1,12 @@
+--flash NOR
+--mtdparts "256k(u-boot),64k(u-boot-env),256k(factory),-(firmware)"
+--model "JDCloud_RE-CP-02"
+--kernel-offset 0x90000
+--reset-pin 18
+--sysled-pin 6
+--cpufreq 880
+--ramfreq 1200
+--ddrparam DDR3-256MiB
+--oldparam false
+--baudrate 115200
+--yes

@@ -1,0 +1,12 @@
+--flash NAND
+--mtdparts "512k(u-boot),512k(u-boot-env),512k(factory),-(firmware)"
+--model "JCG_Q20"
+--kernel-offset 0x180000
+--reset-pin 18
+--sysled-pin 14
+--cpufreq 880
+--ramfreq 1200
+--ddrparam DDR3-256MiB
+--oldparam false
+--baudrate 115200
+--yes
