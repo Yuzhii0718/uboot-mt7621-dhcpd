@@ -77,8 +77,14 @@ int last_stage_init(void)
 #ifdef MT7621_LED_STATUS1
 	gpio_output_init(MT7621_LED_STATUS1, 0, "led-status");	// led status on
 #endif
+#ifdef MT7621_LED_STATUS2
+	gpio_output_init(MT7621_LED_STATUS2, 0, "led-status2");	// led status2 on
+#endif
 #ifdef MT7621_BUTTON_RESET
 	gpio_input_init(MT7621_BUTTON_RESET, "button-reset");	// init button reset
+#endif
+#ifdef MT7621_BUTTON_WPS
+	gpio_input_init(MT7621_BUTTON_WPS, "button-wps");	// init button wps
 #endif
 #else
 	#define MT7621_UNUSED_PIN_LIST {}

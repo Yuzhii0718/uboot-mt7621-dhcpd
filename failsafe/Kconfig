@@ -27,6 +27,20 @@ config MT7621_BUTTON_RESET
 	help
 	  GPIO number of reset button used by failsafe logic.
 
+config MT7621_BUTTON_WPS_ENABLE
+	bool "Enable WPS button"
+	default n
+	depends on FAILSAFE_ON_BUTTON
+	help
+	  Enable WPS button GPIO for TFTP download mode.
+
+config MT7621_BUTTON_WPS
+	int "WPS button GPIO"
+	range 0 48
+	depends on MT7621_BUTTON_WPS_ENABLE
+	help
+	  GPIO number of WPS button used by failsafe logic.
+
 config MT7621_LED_STATUS1_ENABLE
 	bool "Enable status LED"
 	default n
@@ -39,6 +53,19 @@ config MT7621_LED_STATUS1
 	depends on MT7621_LED_STATUS1_ENABLE
 	help
 	  GPIO number of status LED used by board init/failsafe indication.
+
+config MT7621_LED_STATUS2_ENABLE
+	bool "Enable status LED 2"
+	default n
+	help
+	  Enable status LED2 GPIO control. Disable to omit LED2 support.
+
+config MT7621_LED_STATUS2
+	int "Status LED 2 GPIO"
+	range 0 48
+	depends on MT7621_LED_STATUS2_ENABLE
+	help
+	  GPIO number of status LED2 used by board init/failsafe indication.
 
 config WEBUI_FAILSAFE_BOARD_MODEL
 	string "Failsafe board model string"

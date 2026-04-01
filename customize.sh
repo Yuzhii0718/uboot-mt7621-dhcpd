@@ -44,6 +44,11 @@ echo "======================================================================"
 # $10	string: board model (optional)
 # $11	string: board name/id (optional)
 # $12	string: use old DDR timing parameters (true/false, optional)
+# $13	number: wps pin (optional)
+# $14	number: sysled2 gpio (optional)
+
+WPS_PIN="${13--1}"
+SYSLED2_PIN="${14--1}"
 
 echo "Parse flash type: $1"
 # simple check if partition table is valid
@@ -85,6 +90,26 @@ if [ "$5" -ge 0 -a "$5" -le 48 ]; then
 	echo "CONFIG_MT7621_LED_STATUS1=$5" >> ${DEFCONFIG}
 else
 	echo "System LED is disabled!"
+fi
+
+if [ "${WPS_PIN}" -ge 0 -a "${WPS_PIN}" -le 48 ]; then
+	if [ "$4" -ge 0 -a "$4" -le 48 ]; then
+		echo "set wps button pin: ${WPS_PIN}"
+		echo "CONFIG_MT7621_BUTTON_WPS_ENABLE=y" >> ${DEFCONFIG}
+		echo "CONFIG_MT7621_BUTTON_WPS=${WPS_PIN}" >> ${DEFCONFIG}
+	else
+		echo "WPS button is set but reset button is disabled; ignoring WPS!"
+	fi
+else
+	echo "WPS button is disabled!"
+fi
+
+if [ "${SYSLED2_PIN}" -ge 0 -a "${SYSLED2_PIN}" -le 48 ]; then
+	echo "set system led2 pin: ${SYSLED2_PIN}"
+	echo "CONFIG_MT7621_LED_STATUS2_ENABLE=y" >> ${DEFCONFIG}
+	echo "CONFIG_MT7621_LED_STATUS2=${SYSLED2_PIN}" >> ${DEFCONFIG}
+else
+	echo "System LED2 is disabled!"
 fi
 
 if [ "$6" -ge 400 -a "$6" -le 1200 ]; then

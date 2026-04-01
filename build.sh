@@ -17,6 +17,8 @@ MTDPARTS=""
 KERNEL_OFFSET=""
 RESET_PIN="-1"
 SYSLED_PIN="-1"
+WPS_PIN="-1"
+SYSLED2_PIN="-1"
 CPUFREQ=""
 RAMFREQ=""
 DDRPARM=""
@@ -54,7 +56,9 @@ Options:
   --factory-size SIZE             factory 分区大小（可选/旧用法：仅用于拼接默认分区表）
   --kernel-offset VALUE           内核偏移（例如 0x60000 或十进制数）
   --reset-pin INT                 复位按键 GPIO（0-48，或 -1 禁用）
+  --wps-pin INT                   WPS 按键 GPIO（0-48，或 -1 禁用；需启用 reset-pin）
   --sysled-pin INT                系统 LED GPIO（0-48，或 -1 禁用）
+  --sysled2-pin INT               系统 LED2 GPIO（0-48，或 -1 禁用）
   --cpufreq INT                   CPU 频率 MHz（400-1200）
   --ramfreq {400|800|1066|1200}   DRAM 速率 MT/s
   --ddrparam NAME                 DDR 参数（从内置列表选择之一或自定义）
@@ -72,7 +76,9 @@ Options:
     --model "FCJ_G-AX1800-F" \
     --kernel-offset 0x180000 \
     --reset-pin 7 \
+    --wps-pin 6 \
     --sysled-pin 13 \
+    --sysled2-pin 15 \
     --cpufreq 1000 \
     --ramfreq 1200 \
     --ddrparam DDR3-512MiB \
@@ -124,7 +130,9 @@ parse_args() {
       --factory-size) FACTORY_SIZE="$2"; shift 2;;
       --kernel-offset) KERNEL_OFFSET="$2"; shift 2;;
       --reset-pin) RESET_PIN="$2"; shift 2;;
+      --wps-pin) WPS_PIN="$2"; shift 2;;
       --sysled-pin) SYSLED_PIN="$2"; shift 2;;
+      --sysled2-pin) SYSLED2_PIN="$2"; shift 2;;
       --cpufreq) CPUFREQ="$2"; shift 2;;
       --ramfreq) RAMFREQ="$2"; shift 2;;
       --ddrparam) DDRPARM="$2"; shift 2;;
@@ -248,7 +256,7 @@ validate() {
     echo "错误: kernel-offset 需为十六进制(如 0x60000)或十进制"; exit 1
   fi
   # GPIO 范围或 -1
-  for p in RESET_PIN SYSLED_PIN; do
+  for p in RESET_PIN SYSLED_PIN WPS_PIN SYSLED2_PIN; do
     local val="${!p}"
     if ! [[ "${val}" =~ ^-?[0-9]+$ ]]; then
       echo "错误: ${p} 必须是整数（-1 或 0-48）"; exit 1
@@ -257,6 +265,9 @@ validate() {
       echo "错误: ${p} 超出范围（-1 或 0-48）"; exit 1
     fi
   done
+  if (( WPS_PIN != -1 && RESET_PIN == -1 )); then
+    echo "错误: 使用 wps-pin 需同时启用 reset-pin"; exit 1
+  fi
   # CPU 频率
   if [[ -z "${CPUFREQ}" ]] || ! [[ "${CPUFREQ}" =~ ^[0-9]+$ ]] || (( CPUFREQ < 400 || CPUFREQ > 1200 )); then
     echo "错误: cpufreq 必须是 400-1200 的整数 MHz"; exit 1
@@ -290,6 +301,8 @@ interactive() {
   # GPIO
   RESET_PIN=$(ask "复位按钮 GPIO (0-48，-1 禁用)" "-1")
   SYSLED_PIN=$(ask "系统 LED GPIO (0-48，-1 禁用)" "-1")
+  WPS_PIN=$(ask "WPS 按钮 GPIO (0-48，-1 禁用；需启用 reset-pin)" "-1")
+  SYSLED2_PIN=$(ask "系统 LED2 GPIO (0-48，-1 禁用)" "-1")
   # CPU 频率
   local cpusel=$(select_with_default "选择 CPU 频率 (MHz)：" "1000" 880 1000 1100 1200)
   CPUFREQ="${cpusel}"
@@ -335,7 +348,7 @@ summary() {
 ======================================================================
 将执行：
   ./customize.sh '${FLASH}' '${MTDPARTS}' '${KERNEL_OFFSET}' '${RESET_PIN}' \
-  '${SYSLED_PIN}' '${CPUFREQ}' '${RAMFREQ}' '${DDRPARM}' '${BAUDRATE}' '${MODEL}' '${BOARD_NAME}' '${OLDPARAM}'
+  '${SYSLED_PIN}' '${CPUFREQ}' '${RAMFREQ}' '${DDRPARM}' '${BAUDRATE}' '${MODEL}' '${BOARD_NAME}' '${OLDPARAM}' '${WPS_PIN}' '${SYSLED2_PIN}'
 EOF
 }
 
@@ -377,7 +390,7 @@ main() {
     fi
   fi
   ./customize.sh "${FLASH}" "${MTDPARTS}" "${KERNEL_OFFSET}" "${RESET_PIN}" \
-                 "${SYSLED_PIN}" "${CPUFREQ}" "${RAMFREQ}" "${DDRPARM}" "${BAUDRATE}" "${MODEL}" "${BOARD_NAME}" "${OLDPARAM}"
+                 "${SYSLED_PIN}" "${CPUFREQ}" "${RAMFREQ}" "${DDRPARM}" "${BAUDRATE}" "${MODEL}" "${BOARD_NAME}" "${OLDPARAM}" "${WPS_PIN}" "${SYSLED2_PIN}"
   echo "======================================================================"
   echo "构建完成。若成功，产物位于 ./archive/ 。"
 }
