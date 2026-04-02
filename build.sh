@@ -43,33 +43,33 @@ FACTORY_SIZE=""
 print_usage() {
   cat <<EOF
 Usage:
-  ./build.sh                      # 交互式选择
-  ./build.sh [options]            # 非交互式构建
-  BOARD=<board> ./build.sh        # 自动加载 configs-mt7621/<board>_defconfig
+  ./build.sh                      # interactive selection
+  ./build.sh [options]            # non-interactive build
+  BOARD=<board> ./build.sh        # automatically load configs-mt7621/<board>_defconfig
 
 Options:
-  --flash {NOR|NAND|NMBM}         闪存类型
-  --mtdparts STRING               MTD 分区表（不含设备前缀），示例：
+  --flash {NOR|NAND|NMBM}         Flash type
+  --mtdparts STRING               MTD partition table (without device prefix), example:
                                   512k(u-boot),512k(u-boot-env),512k(factory),-(firmware)
-  --uboot-size SIZE               u-boot 分区大小（可选/旧用法：仅用于拼接默认分区表）
-  --uboot-env-size SIZE           u-boot-env 分区大小（可选/旧用法：仅用于拼接默认分区表）
-  --factory-size SIZE             factory 分区大小（可选/旧用法：仅用于拼接默认分区表）
-  --kernel-offset VALUE           内核偏移（例如 0x60000 或十进制数）
-  --reset-pin INT                 复位按键 GPIO（0-48，或 -1 禁用）
-  --wps-pin INT                   WPS 按键 GPIO（0-48，或 -1 禁用；需启用 reset-pin）
-  --sysled-pin INT                系统 LED GPIO（0-48，或 -1 禁用）
-  --sysled2-pin INT               系统 LED2 GPIO（0-48，或 -1 禁用）
-  --cpufreq INT                   CPU 频率 MHz（400-1200）
-  --ramfreq {400|800|1066|1200}   DRAM 速率 MT/s
-  --ddrparam NAME                 DDR 参数（从内置列表选择之一或自定义）
-  --oldparam {true|false}         使用旧 DDR 时序参数（默认 false）
-  --baudrate {57600|115200}       串口速率（默认 115200）
-  --model STRING                  设备型号/版型（可选，会写入 failsafe sysinfo 兜底）
-  --board-name STRING             设备名称/代号（可选，默认同 --model）
-  --yes                           跳过交互确认
-  -h, --help                      显示帮助
+  --uboot-size SIZE               u-boot partition size (optional/legacy: only used to build the default partition table)
+  --uboot-env-size SIZE           u-boot-env partition size (optional/legacy: only used to build the default partition table)
+  --factory-size SIZE             factory partition size (optional/legacy: only used to build the default partition table)
+  --kernel-offset VALUE           Kernel offset (e.g., 0x60000 or decimal)
+  --reset-pin INT                 Reset button GPIO (0-48, or -1 to disable)
+  --wps-pin INT                   WPS button GPIO (0-48, or -1 to disable; requires reset-pin)
+  --sysled-pin INT                System LED GPIO (0-48, or -1 to disable)
+  --sysled2-pin INT               System LED2 GPIO (0-48, or -1 to disable)
+  --cpufreq INT                   CPU frequency MHz (400-1200)
+  --ramfreq {400|800|1066|1200}   DRAM speed MT/s
+  --ddrparam NAME                 DDR parameter (choose from built-in list or custom)
+  --oldparam {true|false}         Use old DDR timing parameters (default false)
+  --baudrate {57600|115200}       Serial baud rate (default 115200)
+  --model STRING                  Device model/variant (optional, will be written into failsafe sysinfo fallback)
+  --board-name STRING             Board name/code (optional, defaults to --model)
+  --yes                           Skip interactive confirmation
+  -h, --help                      Show help
 
-示例（非交互）:
+Example (non-interactive):
   ./build.sh \
     --flash NMBM \
     --mtdparts "512k(u-boot),512k(u-boot-env),512k(factory),-(firmware)" \
@@ -95,21 +95,21 @@ load_board_defconfig() {
   local -a parsed
 
   if [[ ! -f "${cfg_file}" ]]; then
-    echo "错误: 指定 BOARD='${board}'，但未找到配置文件: ${cfg_file}"; return 1
+    echo "Error: BOARD='${board}' specified but config file not found: ${cfg_file}"; return 1
   fi
 
   DEFCONFIG_ARGS=()
   while IFS= read -r line || [[ -n "${line}" ]]; do
-    # 去掉首尾空白
+    # Trim leading/trailing whitespace
     line="${line#"${line%%[![:space:]]*}"}"
     line="${line%"${line##*[![:space:]]}"}"
-    # 跳过空行和注释
+    # Skip blank lines and comments
     if [[ -z "${line}" || "${line}" == \#* ]]; then
       continue
     fi
 
     parsed=()
-    # 使用 shell 语义拆分（支持引号），仅用于本地 defconfig 文件
+    # Use shell semantics to split (supports quotes), for local defconfig files only
     # shellcheck disable=SC2206
     eval "parsed=(${line})"
     if (( ${#parsed[@]} > 0 )); then
@@ -142,7 +142,7 @@ parse_args() {
       --board-name) BOARD_NAME="$2"; shift 2;;
       --yes) YES="1"; shift;;
       -h|--help) print_usage; exit 0;;
-      *) echo "未知参数: $1"; print_usage; exit 1;;
+      *) echo "Unknown argument: $1"; print_usage; exit 1;;
     esac
   done
 }
@@ -165,10 +165,10 @@ ask() {
   local var
   if [[ -n "${default_val}" ]]; then
     if [[ -t 0 ]]; then
-      # -e: readline（支持方向键/历史）; -i: 预填默认值
-      read -e -r -p "${prompt} [默认: ${default_val}] > " -i "${default_val}" var || true
+      # -e: readline (supports arrow keys/history); -i: prefill default value
+      read -e -r -p "${prompt} [Default: ${default_val}] > " -i "${default_val}" var || true
     else
-      read -r -p "${prompt} [默认: ${default_val}] > " var || true
+      read -r -p "${prompt} [Default: ${default_val}] > " var || true
     fi
     echo "${var:-${default_val}}"
   else
@@ -191,9 +191,9 @@ select_from() {
     ((i++))
   done
   if [[ -t 0 ]]; then
-    read -e -r -p "选择序号 (输入数字 1-${#items[@]}) > " idx || true
+    read -e -r -p "Select index (enter number 1-${#items[@]}) > " idx || true
   else
-    read -r -p "选择序号 (输入数字 1-${#items[@]}) > " idx || true
+    read -r -p "Select index (enter number 1-${#items[@]}) > " idx || true
   fi
   if [[ -z "${idx}" ]] || ! [[ "${idx}" =~ ^[0-9]+$ ]] || (( idx < 1 || idx > ${#items[@]} )); then
     echo ""; return 1
@@ -212,9 +212,9 @@ select_with_default() {
     ((i++))
   done
   if [[ -t 0 ]]; then
-    read -e -r -p "选择序号 (默认: ${default_val}) > " idx || true
+    read -e -r -p "Select index (default: ${default_val}) > " idx || true
   else
-    read -r -p "选择序号 (默认: ${default_val}) > " idx || true
+    read -r -p "Select index (default: ${default_val}) > " idx || true
   fi
   if [[ -z "${idx}" ]]; then
     echo "${default_val}"; return 0
@@ -226,92 +226,91 @@ select_with_default() {
 }
 
 validate() {
-  # MTDPARTS 基本校验：允许用户重命名/新增分区，但必须包含 firmware 分区
-  # 注意：脚本期望传入的是“不含设备前缀”的分区串（不要包含 spi0.0: 之类前缀）
+  # MTDPARTS basic validation: allow renaming/adding partitions, but must include firmware partition
+  # Note: script expects partition string without device prefix (do not include spi0.0: etc)
   if [[ -z "${MTDPARTS}" ]]; then
-    echo "错误: 未提供 MTD 分区表，示例：${DEFAULT_MTDPARTS}"; exit 1
+    echo "Error: No MTD partition table provided, example: ${DEFAULT_MTDPARTS}"; exit 1
   fi
   if echo -n "${MTDPARTS}" | grep -Eq '^[^,()]+:'; then
-    echo "错误: MTD 分区表请勿包含设备前缀（例如 spi0.0:），应形如：${DEFAULT_MTDPARTS}"; exit 1
+    echo "Error: MTD partition table must not include device prefix (e.g., spi0.0:), should look like: ${DEFAULT_MTDPARTS}"; exit 1
   fi
   if ! echo -n "${MTDPARTS}" | grep -q "(firmware)"; then
-    echo "错误: MTD 分区表必须包含名为 firmware 的分区，例如：${DEFAULT_MTDPARTS}"; exit 1
+    echo "Error: MTD partition table must include a partition named firmware, e.g.: ${DEFAULT_MTDPARTS}"; exit 1
   fi
   if ! echo -n "${MTDPARTS}" | grep -Eq '\([^()]+\)'; then
-    echo "错误: MTD 分区表格式不合法，示例：${DEFAULT_MTDPARTS}"; exit 1
+    echo "Error: MTD partition table format invalid, example: ${DEFAULT_MTDPARTS}"; exit 1
   fi
-  # 若提供了独立分区大小，进行基本合法性校验
+  # If separate partition sizes provided, perform basic validation
   for tok in "${UBOOT_SIZE}" "${UBOOT_ENV_SIZE}" "${FACTORY_SIZE}"; do
     if [[ -n "$tok" ]] && ! is_size_token "$tok"; then
-      echo "错误: 分区大小需为数字+单位（k/m），例如 512k、1m"; exit 1
+      echo "Error: Partition size must be number+unit (k/m), e.g., 512k, 1m"; exit 1
     fi
   done
-  # FLASH 类型
+  # FLASH type
   case "${FLASH}" in
     NOR|NAND|NMBM) :;;
-    *) echo "错误: 请选择 FLASH 类型 NOR/NAND/NMBM"; exit 1;;
+    *) echo "Error: Choose FLASH type NOR/NAND/NMBM"; exit 1;;
   esac
-  # KERNEL_OFFSET 允许十六进制或十进制
+  # KERNEL_OFFSET accepts hex or decimal
   if [[ -z "${KERNEL_OFFSET}" ]] || ! [[ "${KERNEL_OFFSET}" =~ ^(0x[0-9a-fA-F]+|[0-9]+)$ ]]; then
-    echo "错误: kernel-offset 需为十六进制(如 0x60000)或十进制"; exit 1
+    echo "Error: kernel-offset must be hexadecimal (e.g., 0x60000) or decimal"; exit 1
   fi
-  # GPIO 范围或 -1
+  # GPIO range or -1
   for p in RESET_PIN SYSLED_PIN WPS_PIN SYSLED2_PIN; do
     local val="${!p}"
     if ! [[ "${val}" =~ ^-?[0-9]+$ ]]; then
-      echo "错误: ${p} 必须是整数（-1 或 0-48）"; exit 1
+      echo "Error: ${p} must be an integer (-1 or 0-48)"; exit 1
     fi
     if (( val != -1 && (val < 0 || val > 48) )); then
-      echo "错误: ${p} 超出范围（-1 或 0-48）"; exit 1
+      echo "Error: ${p} out of range (-1 or 0-48)"; exit 1
     fi
   done
   if (( WPS_PIN != -1 && RESET_PIN == -1 )); then
-    echo "错误: 使用 wps-pin 需同时启用 reset-pin"; exit 1
+    echo "Error: Using wps-pin requires reset-pin to be enabled"; exit 1
   fi
-  # CPU 频率
+  # CPU frequency
   if [[ -z "${CPUFREQ}" ]] || ! [[ "${CPUFREQ}" =~ ^[0-9]+$ ]] || (( CPUFREQ < 400 || CPUFREQ > 1200 )); then
-    echo "错误: cpufreq 必须是 400-1200 的整数 MHz"; exit 1
+    echo "Error: cpufreq must be an integer MHz between 400 and 1200"; exit 1
   fi
-  # RAM 频率
+  # RAM frequency
   case "${RAMFREQ}" in
     400|800|1066|1200) :;;
-    *) echo "错误: ramfreq 仅支持 400/800/1066/1200"; exit 1;;
+    *) echo "Error: ramfreq only supports 400/800/1066/1200"; exit 1;;
   esac
-  # old DDR 参数开关
+  # old DDR parameter switch
   case "${OLDPARAM,,}" in
     true|false|1|0|yes|no|y|n) :;;
-    *) echo "错误: oldparam 仅支持 true/false"; exit 1;;
+    *) echo "Error: oldparam only supports true/false"; exit 1;;
   esac
-  # 波特率
+  # Baud rate
   case "${BAUDRATE}" in
     57600|115200) :;;
-    *) echo "错误: baudrate 仅支持 57600 或 115200"; exit 1;;
+    *) echo "Error: baudrate only supports 57600 or 115200"; exit 1;;
   esac
 }
 
 interactive() {
-  # FLASH 类型
-  FLASH=$(select_with_default "选择闪存类型:" "NMBM" NOR NAND NMBM)
-  # 分区表：允许用户重命名分区或新增自定义分区
-  # 说明：这里输入的是“不含设备前缀”的分区串；且必须包含 (firmware) 分区
-  MTDPARTS=$(ask "输入 MTD 分区表（不含设备前缀，需包含 firmware 分区）" "${DEFAULT_MTDPARTS}")
-  # kernel offset，不同闪存可能不同，这里仅做示例提示
+  FLASH=$(select_with_default "Select flash type:" "NMBM" NOR NAND NMBM)
+  # Partition table: allow renaming or adding custom partitions
+  # Note: input should be partition string without device prefix and must include (firmware)
+  MTDPARTS=$(ask "Enter MTD partition table (without device prefix, must include firmware partition)" "${DEFAULT_MTDPARTS}")
+  # kernel offset (different flashes may use different offsets) — example shown
   local example_offset="0x180000"
-  KERNEL_OFFSET=$(ask "输入内核偏移 (示例 ${example_offset})" "${example_offset}")
-  # GPIO
-  RESET_PIN=$(ask "复位按钮 GPIO (0-48，-1 禁用)" "-1")
-  SYSLED_PIN=$(ask "系统 LED GPIO (0-48，-1 禁用)" "-1")
-  WPS_PIN=$(ask "WPS 按钮 GPIO (0-48，-1 禁用；需启用 reset-pin)" "-1")
-  SYSLED2_PIN=$(ask "系统 LED2 GPIO (0-48，-1 禁用)" "-1")
-  # CPU 频率
-  local cpusel=$(select_with_default "选择 CPU 频率 (MHz)：" "1000" 880 1000 1100 1200)
+  KERNEL_OFFSET=$(ask "Enter kernel offset (example ${example_offset})" "${example_offset}")
+  # GPIOs
+  RESET_PIN=$(ask "Reset button GPIO (0-48, -1 to disable)" "-1")
+  SYSLED_PIN=$(ask "System LED GPIO (0-48, -1 to disable)" "-1")
+  WPS_PIN=$(ask "WPS button GPIO (0-48, -1 to disable; requires reset-pin)" "-1")
+  SYSLED2_PIN=$(ask "System LED2 GPIO (0-48, -1 to disable)" "-1")
+  # CPU frequency
+  local cpusel=$(select_with_default "Select CPU frequency (MHz):" "1000" 880 1000 1100 1200)
   CPUFREQ="${cpusel}"
-  # RAM 频率
-  local ramsel=$(select_with_default "选择 DRAM 速率 (MT/s)：" "1200" 400 800 1066 1200)
+  # RAM frequency
+  local ramsel=$(select_with_default "Select DRAM speed (MT/s):" "1200" 400 800 1066 1200)
   RAMFREQ="${ramsel}"
-  # DDR 参数
-  echo "选择 DDR 初始化参数（或留空自定义输入）："
-  local ddrsel=$(select_from "内置列表：" \
+  # DDR parameters
+  echo "Choose DDR initialization parameter (or leave empty to enter custom):"
+  local ddrsel=$(select_from "Built-in list:" \
     DDR2-64MiB \
     DDR2-128MiB \
     DDR2-W9751G6KB-64MiB-1066MHz \
@@ -322,22 +321,22 @@ interactive() {
     DDR3-512MiB \
     DDR3-128MiB-KGD) || true
   if [[ -z "${ddrsel}" ]]; then
-    DDRPARM=$(ask "自定义 DDR 参数（大小写需与 customize.sh 中 case 项一致）" "DDR3-256MiB")
+    DDRPARM=$(ask "Custom DDR parameter (case must match entries in customize.sh case)" "DDR3-256MiB")
   else
     DDRPARM="${ddrsel}"
   fi
-  # old DDR 参数开关
+  # old DDR parameter switch
   local oldsel
-  oldsel=$(select_with_default "是否使用旧 DDR 时序参数：" "false" false true)
+  oldsel=$(select_with_default "Use old DDR timing parameters:" "false" false true)
   OLDPARAM="${oldsel}"
-  # 波特率
-  local brsel=$(select_with_default "选择串口波特率：" "115200" 57600 115200)
+  # Baud rate
+  local brsel=$(select_with_default "Select serial baud rate:" "115200" 57600 115200)
   BAUDRATE="${brsel}"
 
-  # 版型/名称（可选，用于 failsafe sysinfo 的兜底显示）
-  MODEL=$(ask "设备型号/版型（可选，留空则不写入 failsafe 兜底配置）" "")
+  # Model/Name (optional; used as a fallback display in failsafe sysinfo)
+  MODEL=$(ask "Device model/variant (optional; leave empty to not write into failsafe fallback config)" "")
   if [[ -n "${MODEL}" ]]; then
-    BOARD_NAME=$(ask "设备名称/代号（可选，默认同上）" "${MODEL}")
+    BOARD_NAME=$(ask "Board name/code (optional, default same as above)" "${MODEL}")
   else
     BOARD_NAME=""
   fi
@@ -346,7 +345,7 @@ interactive() {
 summary() {
   cat <<EOF
 ======================================================================
-将执行：
+Will execute:
   ./customize.sh '${FLASH}' '${MTDPARTS}' '${KERNEL_OFFSET}' '${RESET_PIN}' \
   '${SYSLED_PIN}' '${CPUFREQ}' '${RAMFREQ}' '${DDRPARM}' '${BAUDRATE}' '${MODEL}' '${BOARD_NAME}' '${OLDPARAM}' '${WPS_PIN}' '${SYSLED2_PIN}'
 EOF
@@ -359,12 +358,12 @@ main() {
   else
     parse_args "$@"
   fi
-  # 如未直接提供 mtdparts，但提供了各分区大小，则拼接
+  # If MTDPARTS not provided directly but partition sizes are provided, build MTDPARTS
   if [[ -z "${MTDPARTS}" ]] && { [[ -n "${UBOOT_SIZE}" ]] || [[ -n "${UBOOT_ENV_SIZE}" ]] || [[ -n "${FACTORY_SIZE}" ]]; }; then
     MTDPARTS=$(build_mtdparts)
   fi
   if [[ -z "${FLASH}" || -z "${MTDPARTS}" || -z "${KERNEL_OFFSET}" || -z "${CPUFREQ}" || -z "${RAMFREQ}" || -z "${DDRPARM}" ]]; then
-    echo "进入交互式配置..."
+    echo "Entering interactive configuration..."
     interactive
   fi
   validate
@@ -375,24 +374,24 @@ main() {
   fi
 
   if [[ -n "${LOADED_DEFCONFIG}" ]]; then
-    echo "已加载 BOARD 配置: ${LOADED_DEFCONFIG}"
+    echo "Loaded BOARD Config: ${LOADED_DEFCONFIG}"
   fi
 
   summary
   if [[ "${YES}" != "1" ]]; then
     if [[ -t 0 ]]; then
-      read -e -r -p "确认执行？[y/N] " confirm || true
+      read -e -r -p "Confirm execution? [y/N] " confirm || true
     else
-      read -r -p "确认执行？[y/N] " confirm || true
+      read -r -p "Confirm execution? [y/N] " confirm || true
     fi
     if [[ "${confirm,,}" != "y" ]]; then
-      echo "已取消。"; exit 0
+      echo "Cancelled."; exit 0
     fi
   fi
   ./customize.sh "${FLASH}" "${MTDPARTS}" "${KERNEL_OFFSET}" "${RESET_PIN}" \
                  "${SYSLED_PIN}" "${CPUFREQ}" "${RAMFREQ}" "${DDRPARM}" "${BAUDRATE}" "${MODEL}" "${BOARD_NAME}" "${OLDPARAM}" "${WPS_PIN}" "${SYSLED2_PIN}"
   echo "======================================================================"
-  echo "构建完成。若成功，产物位于 ./archive/ 。"
+  echo "Build complete. If successful, artifacts are located in ./archive/ ."
 }
 
 main "$@"

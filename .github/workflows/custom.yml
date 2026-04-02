@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       model:
-        description: '设备型号'
+        description: 'Device Model'
         required: true
         type: string
         default: 'ZTE_E8820S'
       flash:
-        description: 'Flash 类型'
+        description: 'Flash Type'
         required: true
         type: choice
         options:
@@ -18,7 +18,7 @@ on:
         - 'NOR'
         default: 'NAND'
       mtdparts:
-        description: 'MTD 分区表'
+        description: 'MTD Partitions'
         required: true
         type: string
         default: '512k(u-boot),512k(u-boot-env),256k(factory),-(firmware)'
@@ -28,17 +28,17 @@ on:
         type: string
         default: '0x140000'
       gpio_config:
-        description: 'GPIO 配置 (格式: reset_pin,sysled_pin)'
+        description: 'GPIO Config (format: reset_pin,sysled_pin)'
         required: true
         type: string
         default: '18,3'
       cpufreq:
-        description: 'CPU 频率 (400 - 1200)'
+        description: 'CPU Frequency (400 - 1200)'
         required: true
         type: string
         default: '880'
       ramfreq:
-        description: 'DRAM 频率'
+        description: 'DRAM Frequency'
         required: true
         type: choice
         options:
@@ -48,7 +48,7 @@ on:
         - '1200'
         default: '1200'
       ddrparam:
-        description: '首选DDR初始化参数'
+        description: 'DDR initialization parameters'
         required: true
         type: choice
         options:
@@ -63,12 +63,12 @@ on:
         - 'DDR3-128MiB-KGD'
         default: 'DDR3-256MiB'
       oldparam:
-        description: '使用旧DDR时序参数'
+        description: 'Use old DDR parameters (for compatibility with older hardware revisions)'
         required: true
         type: boolean
         default: false
       baudrate:
-        description: '波特率'
+        description: 'Baud Rate'
         required: true
         type: choice
         options:
@@ -151,17 +151,19 @@ jobs:
         with:
           name: CUSTOM-${{ inputs.model }}-${{ steps.timestamp.outputs.now }}
           body: |
-            ## 构建参数
-            - 设备型号: ${{ inputs.model }}
-            - 闪存类型: ${{ inputs.flash }}
-            - 分区表: ${{ inputs.mtdparts }}
-            - 内核加载地址: ${{ inputs.kernel_offset }}
-            - 复位按钮GPIO: ${{ steps.gpio.outputs.reset_pin }}
-            - 系统指示灯GPIO: ${{ steps.gpio.outputs.sysled_pin }}
-            - CPU频率: ${{ inputs.cpufreq }} MHz
-            - 内存频率: ${{ inputs.ramfreq }} MHz
-            - DDR初始化参数: ${{ inputs.ddrparam }}
-            - 使用旧DDR参数: ${{ inputs.oldparam }}
-            - 波特率: ${{ inputs.baudrate }}
+            - Commit: ${{ github.sha }}
+            - Build Time: ${{ steps.timestamp.outputs.now }} (UTC)
+            - ---
+            - Device Model: ${{ inputs.model }}
+            - Flash Type: ${{ inputs.flash }}
+            - MTD Partitions: ${{ inputs.mtdparts }}
+            - Kernel Load Address: ${{ inputs.kernel_offset }}
+            - Reset Button GPIO: ${{ steps.gpio.outputs.reset_pin }}
+            - Sysled GPIO: ${{ steps.gpio.outputs.sysled_pin }}
+            - CPU Frequency: ${{ inputs.cpufreq }} MHz
+            - DDR Frequency: ${{ inputs.ramfreq }} MHz
+            - DDR initialization parameters: ${{ inputs.ddrparam }}
+            - Use old DDR parameters: ${{ inputs.oldparam }}
+            - Baud Rate: ${{ inputs.baudrate }}
           files: uboot-mt7621/archive/*
           tag_name: ${{ inputs.model }}-${{ steps.timestamp.outputs.now }}

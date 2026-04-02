@@ -4,26 +4,28 @@ on:
   workflow_dispatch:
     inputs:
       model:
-        description: '设备型号'
+        description: 'Device model, e.g. zte_e8820s'
         required: true
         type: string
         default: 'zte_e8820s'
       warninginfo:
-        description: '警告信息：
-            这些来自自动化迁移的配置文件[configs-mt7621](https://github.com/Yuzhii0718/uboot-mt7621-dhcpd/tree/main/configs-mt7621)**并不可信**，
-            编译之前请**务必检查**它们是否适合你的设备！
-            在使用之前请查看 [README](https://github.com/Yuzhii0718/uboot-mt7621-dhcpd/blob/main/README.md)!
-            否则**有变砖的风险，自行承担**！'
+        description: 'Warning: These configuration files from the automated migration.
+          Configs-mt7621 <https://github.com/Yuzhii0718/uboot-mt7621-dhcpd/tree/main/configs-mt7621> are untrusted!
+          Please definitely check whether they are suitable for your device before compiling!
+          Please review the README <https://github.com/Yuzhii0718/uboot-mt7621-dhcpd/blob/main/README.md> before use!
+          Otherwise, there is a risk of bricking your device, at your own risk!'
         required: true
         type: boolean
         default: false
       warning:
-        description: '我已阅读 README 以及警告信息，并自行承担风险！'
+        description: 'I have read the README and warning messages and am proceeding at my own risk!'
         required: true
         type: boolean
         default: false
       confirm:
-        description: '我没有确认警告信息，只是闭眼选中了所有的复选框，请关闭这个工作流！'
+        description: 'I did not check the warning message; 
+          I just blindly selected all the checkboxes.
+          Please close this workflow!'
         required: true
         type: boolean
         default: false
@@ -106,7 +108,9 @@ jobs:
         with:
           name: BOARD-${{ inputs.model }}-${{ steps.timestamp.outputs.now }}
           body: |
-            ## 构建参数
-            - 设备型号: ${{ inputs.model }}
+            - Commit: ${{ github.sha }}
+            - Build Time: ${{ steps.timestamp.outputs.now }} (UTC)
+            - ---
+            - Device: ${{ inputs.model }}
           files: uboot-mt7621/archive/*
           tag_name: ${{ inputs.model }}-${{ steps.timestamp.outputs.now }}
