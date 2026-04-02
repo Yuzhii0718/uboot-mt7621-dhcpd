@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # toolchain path
-Toolchain=$(cd ../openwrt*/toolchain-mipsel*/bin; pwd)'/mipsel-openwrt-linux-'
+Toolchain=$(cd ./openwrt*/toolchain-mipsel*/bin; pwd)'/mipsel-openwrt-linux-'
 Staging=${Toolchain%/toolchain-*}
 
 echo "======================================================================"

@@ -14,7 +14,7 @@ on:
             编译之前请**务必检查**它们是否适合你的设备！
             在使用之前请查看 [README](https://github.com/Yuzhii0718/uboot-mt7621-dhcpd/blob/main/README.md)!
             否则**有变砖的风险，自行承担**！'
-        required: false
+        required: true
         type: boolean
         default: false
       warning:
@@ -27,6 +27,11 @@ on:
         required: true
         type: boolean
         default: false
+      pub_release:
+        description: 'Publish to GitHub Release'
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   build:
@@ -63,8 +68,10 @@ jobs:
 
       - name: Download OpenWrt toolchain
         run: |
+          cd uboot-mt7621
           wget -O - https://github.com/DragonBluep/uboot-mt7621/releases/download/20230517/openwrt-toolchain-ramips-mt7621_gcc-12.3.0_musl.Linux-x86_64.tar.xz \
             | tar --xz -xf -
+          cd ..
 
       - name: Compile
         working-directory: uboot-mt7621
@@ -93,6 +100,7 @@ jobs:
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
+        if: ${{ inputs.pub_release }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

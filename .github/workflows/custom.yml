@@ -75,6 +75,11 @@ on:
         - '57600'
         - '115200'
         default: '115200'
+      pub_release:
+        description: 'Publish to GitHub Release'
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   build:
@@ -99,8 +104,10 @@ jobs:
 
       - name: Download OpenWrt toolchain
         run: |
+          cd uboot-mt7621
           wget -O - https://github.com/DragonBluep/uboot-mt7621/releases/download/20230517/openwrt-toolchain-ramips-mt7621_gcc-12.3.0_musl.Linux-x86_64.tar.xz \
             | tar --xz -xf -
+          cd ..
 
       - name: Parse GPIO config
         id: gpio
@@ -138,6 +145,7 @@ jobs:
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
+        if: ${{ inputs.pub_release }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

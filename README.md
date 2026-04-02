@@ -45,16 +45,9 @@ sudo apt-get install git swig python2-dev
 - Get toolchain:
 
 ```bash
+cd uboot-mt7621-dhcpd
 wget -O - https://github.com/DragonBluep/uboot-mt7621/releases/download/20230517/openwrt-toolchain-ramips-mt7621_gcc-12.3.0_musl.Linux-x86_64.tar.xz | tar --xz -xf -
 ```
-
-> The toolchain directory and U-Boot source directory should be in the same directory.
-> For example:
->
-> ```bash
-> ├── openwrt-toolchain-ramips-mt7621_gcc-12.3.0_musl.Linux-x86_64
-> └── uboot-mt7621-dhcpd
-> ```
 
 - Run build script:
 
