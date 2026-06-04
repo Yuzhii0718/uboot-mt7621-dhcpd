@@ -1,0 +1,14 @@
+--flash NAND
+--mtdparts "512k(u-boot),256k(u-boot-env),256k(factory),-(firmware)"
+--model "Qihoo_360T6GS"
+--kernel-offset 0x100000
+--reset-pin 7
+--wps-pin 6
+--sysled-pin 13
+--sysled2-pin 15
+--cpufreq 880
+--ramfreq 1200
+--ddrparam DDR3-256MiB
+--oldparam false
+--baudrate 115200
+--yes
