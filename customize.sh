@@ -212,7 +212,7 @@ echo "======================================================================"
 
 make mt7621_build_defconfig
 make clean
-make CROSS_COMPILE=${Toolchain} STAGING_DIR=${Staging}
+make CROSS_COMPILE=${Toolchain} STAGING_DIR=${Staging} -j$(nproc) all
 make savedefconfig
 if [ ! -d "archive" ]; then
 	mkdir archive
