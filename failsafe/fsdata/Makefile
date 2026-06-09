@@ -37,14 +37,6 @@ obj-y += initramfs.o
 FILE_initramfs.o := initramfs.html
 FSPATH_initramfs.o := initramfs.html
 
-obj-y += main.o
-FILE_main.o := main.js
-FSPATH_main.o := main.js
-
-obj-y += style.o
-FILE_style.o := style.css
-FSPATH_style.o := style.css
-
 obj-y += uboot.o
 FILE_uboot.o := uboot.html
 FSPATH_uboot.o := uboot.html
@@ -52,6 +44,18 @@ FSPATH_uboot.o := uboot.html
 obj-y += reboot.o
 FILE_reboot.o := reboot.html
 FSPATH_reboot.o := reboot.html
+
+obj-y += success.o
+FILE_success.o := success.html
+FSPATH_success.o := success.html
+
+obj-y += main.o
+FILE_main.o := main.js
+FSPATH_main.o := main.js
+
+obj-y += style.o
+FILE_style.o := style.css
+FSPATH_style.o := style.css
 
 # customized build rules
 strip_path = $(subst /,_,$(subst -,_,$(subst .,_,$(1))))
