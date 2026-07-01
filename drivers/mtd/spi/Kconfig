@@ -51,14 +51,6 @@ config SF_DUAL_FLASH
 
 if SPI_FLASH
 
-config SPI_FLASH_SFDP_SUPPORT
-	bool "SFDP table parsing support for SPI NOR flashes"
-	depends on !SPI_FLASH_BAR
-	help
-	 Enable support for parsing and auto discovery of parameters for
-	 SPI NOR flashes using Serial Flash Discoverable Parameters (SFDP)
-	 tables as per JESD216 standard.
-
 config SPI_FLASH_ATMEL
 	bool "Atmel SPI flash support"
 	help
@@ -84,41 +76,15 @@ config SPI_FLASH_MACRONIX
 	help
 	  Add support for various Macronix SPI flash chips (MX25Lxxx)
 
-config SPI_FLASH_PUYA
-	bool "Puya Semiconductor SPI flash support"
-	help
-	  Add support for various Puya Semiconductor SPI flash chips (P25xxx)
-
-config SPI_FLASH_SILICONKAISER
-	bool "Silicon Kaiser SPI flash support"
-	help
-	  Add support for various Silicon Kaiser SPI flash chips (SK25Lxxx)
-
 config SPI_FLASH_SPANSION
 	bool "Spansion SPI flash support"
 	help
 	  Add support for various Spansion SPI flash chips (S25FLxxx)
 
-config SPI_FLASH_S28HX_T
-	bool "Cypress SEMPER Octal (S28) chip support"
-	depends on SPI_FLASH_SPANSION
-	help
-	 Add support for the Cypress S28HL-T and S28HS-T chip. This is a separate
-	 config because the fixup hooks for this flash add extra size overhead.
-	 Boards that don't use the flash can disable this to save space.
-
 config SPI_FLASH_STMICRO
 	bool "STMicro SPI flash support"
 	help
 	  Add support for various STMicro SPI flash chips (M25Pxxx and N25Qxxx)
-
-config SPI_FLASH_MT35XU
-	bool "Micron MT35XU chip support"
-	depends on SPI_FLASH_STMICRO
-	help
-	 Add support for the Micron MT35XU chip. This is a separate config
-	 because the fixup hooks for this flash add extra size overhead. Boards
-	 that don't use the flash can disable this to save space.
 
 config SPI_FLASH_SST
 	bool "SST SPI flash support"
@@ -131,21 +97,9 @@ config SPI_FLASH_WINBOND
 	  Add support for various Winbond SPI flash chips (W25xxx)
 
 config SPI_FLASH_XMC
-	bool "XMC SPI flash support"
+	bool "Xinxin SPI flash support"
 	help
-	  Add support for various XMC (Wuhan Xinxin Semiconductor
-	  Manufacturing Corp.) SPI flash chips (XM25xxx)
-
-config SPI_FLASH_XTX
-	bool "XTX SPI flash support"
-	help
-	  Add support for various XTX (XTX Technology Limited)
-	  SPI flash chips (XT25xxx).
-
-config SPI_FLASH_ZBIT
-	bool "ZBIT SPI flash support"
-	help
-	  Add support for Zbit Semiconductor Inc. SPI flash chips (ZB25xxx).
+	  Add support for various Xinxin SPI flash chips (XM25xxx)
 
 endif
 

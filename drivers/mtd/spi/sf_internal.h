@@ -11,93 +11,6 @@
 
 #include <linux/types.h>
 #include <linux/compiler.h>
-#include <linux/bitops.h>
-
-/* SFDP (Serial Flash Discoverable Parameters) definitions */
-#define SFDP_SIGNATURE		0x50444653U	/* "SFDP" */
-#define SFDP_JESD216_MAJOR	1
-#define SFDP_JESD216_MINOR	0
-#define SFDP_JESD216A_MINOR	5
-#define SFDP_JESD216B_MINOR	6
-
-#define SFDP_BFPT_ID		0xff00	/* Basic Flash Parameter Table */
-#define SFDP_SECTOR_MAP_ID	0xff81	/* Sector Map Table */
-#define SFDP_SST_ID			0x01bf	/* Manufacturer specific Table */
-#define SFDP_PROFILE1_ID	0xff05	/* xSPI Profile 1.0 Table */
-#define SFDP_SCCR_MAP_ID	0xff87	/* Status, Control and Configuration Register Map */
-
-struct sfdp_parameter_header {
-	u8		id_lsb;
-	u8		minor;
-	u8		major;
-	u8		length; /* in double words */
-	u8		parameter_table_pointer[3]; /* byte address */
-	u8		id_msb;
-};
-
-#define SFDP_PARAM_HEADER_ID(p)	(((p)->id_msb << 8) | (p)->id_lsb)
-#define SFDP_PARAM_HEADER_PTP(p) \
-	(((p)->parameter_table_pointer[2] << 16) | \
-	 ((p)->parameter_table_pointer[1] <<  8) | \
-	 ((p)->parameter_table_pointer[0] <<  0))
-
-struct sfdp_header {
-	u32		signature; /* 0x50444653U <=> "SFDP" */
-	u8		minor;
-	u8		major;
-	u8		nph; /* 0-base number of parameter headers */
-	u8		unused;
-
-	/* Basic Flash Parameter Table. */
-	struct sfdp_parameter_header	bfpt_header;
-};
-
-/* Basic Flash Parameter Table */
-#define BFPT_DWORD(i)		((i) - 1)
-#define BFPT_DWORD_MAX		20
-#define BFPT_DWORD_MAX_JESD216	9
-#define BFPT_DWORD_MAX_JESD216B	16
-
-/* 1st DWORD. */
-#define BFPT_DWORD1_FAST_READ_1_1_2	BIT(16)
-#define BFPT_DWORD1_ADDRESS_BYTES_MASK	GENMASK(18, 17)
-#define BFPT_DWORD1_ADDRESS_BYTES_3_ONLY	(0x0UL << 17)
-#define BFPT_DWORD1_ADDRESS_BYTES_3_OR_4	(0x1UL << 17)
-#define BFPT_DWORD1_ADDRESS_BYTES_4_ONLY	(0x2UL << 17)
-#define BFPT_DWORD1_DTR				BIT(19)
-#define BFPT_DWORD1_FAST_READ_1_2_2	BIT(20)
-#define BFPT_DWORD1_FAST_READ_1_4_4	BIT(21)
-#define BFPT_DWORD1_FAST_READ_1_1_4	BIT(22)
-
-/* 5th DWORD. */
-#define BFPT_DWORD5_FAST_READ_2_2_2	BIT(0)
-#define BFPT_DWORD5_FAST_READ_4_4_4	BIT(4)
-
-/* 11th DWORD. */
-#define BFPT_DWORD11_PAGE_SIZE_SHIFT	4
-#define BFPT_DWORD11_PAGE_SIZE_MASK	GENMASK(7, 4)
-
-/* 15th DWORD - Quad Enable Requirements */
-#define BFPT_DWORD15_QER_MASK		GENMASK(22, 20)
-#define BFPT_DWORD15_QER_NONE		(0x0UL << 20) /* Micron */
-#define BFPT_DWORD15_QER_SR2_BIT1_BUGGY	(0x1UL << 20)
-#define BFPT_DWORD15_QER_SR1_BIT6	(0x2UL << 20) /* Macronix */
-#define BFPT_DWORD15_QER_SR2_BIT7	(0x3UL << 20)
-#define BFPT_DWORD15_QER_SR2_BIT1_NO_RD	(0x4UL << 20)
-#define BFPT_DWORD15_QER_SR2_BIT1	(0x5UL << 20) /* Spansion */
-
-#define BFPT_DWORD16_SOFT_RST		BIT(12)
-#define BFPT_DWORD16_EX4B_PWRCYC	BIT(21)
-
-#define BFPT_DWORD18_CMD_EXT_MASK	GENMASK(30, 29)
-#define BFPT_DWORD18_CMD_EXT_REP	(0x0UL << 29) /* Repeat */
-#define BFPT_DWORD18_CMD_EXT_INV	(0x1UL << 29) /* Invert */
-#define BFPT_DWORD18_CMD_EXT_RES	(0x2UL << 29) /* Reserved */
-#define BFPT_DWORD18_CMD_EXT_16B	(0x3UL << 29) /* 16-bit opcode */
-
-struct sfdp_bfpt {
-	u32	dwords[BFPT_DWORD_MAX];
-};
 
 /* Dual SPI flash memories - see SPI_COMM_DUAL_... */
 enum spi_dual_flash {
@@ -109,10 +22,7 @@ enum spi_dual_flash {
 enum spi_nor_option_flags {
 	SNOR_F_SST_WR		= BIT(0),
 	SNOR_F_USE_FSR		= BIT(1),
-	SNOR_F_NO_ERASE		= BIT(2),
 	SNOR_F_USE_UPAGE	= BIT(3),
-	SNOR_F_USE_CLSR		= BIT(4),
-	SNOR_F_4B_ADDR		= BIT(5),
 };
 
 #define SPI_FLASH_3B_ADDR_LEN		3
@@ -131,8 +41,6 @@ enum spi_nor_option_flags {
 #define CMD_ERASE_4K			0x20
 #define CMD_ERASE_CHIP			0xc7
 #define CMD_ERASE_64K			0xd8
-#define CMD_ERASE_4K_4B			0x21
-#define CMD_ERASE_64K_4B		0xdc
 
 /* Write commands */
 #define CMD_WRITE_STATUS		0x01
@@ -140,8 +48,6 @@ enum spi_nor_option_flags {
 #define CMD_WRITE_DISABLE		0x04
 #define CMD_WRITE_ENABLE		0x06
 #define CMD_QUAD_PAGE_PROGRAM		0x32
-#define CMD_PAGE_PROGRAM_4B		0x12
-#define CMD_QUAD_PAGE_PROGRAM_4B	0x34
 
 /* Read commands */
 #define CMD_READ_ARRAY_SLOW		0x03
@@ -150,17 +56,11 @@ enum spi_nor_option_flags {
 #define CMD_READ_DUAL_IO_FAST		0xbb
 #define CMD_READ_QUAD_OUTPUT_FAST	0x6b
 #define CMD_READ_QUAD_IO_FAST		0xeb
-#define CMD_READ_ARRAY_SLOW_4B		0x13
-#define CMD_READ_ARRAY_FAST_4B		0x0c
-#define CMD_READ_DUAL_OUTPUT_FAST_4B	0x3c
-#define CMD_READ_QUAD_OUTPUT_FAST_4B	0x6c
 #define CMD_READ_ID			0x9f
 #define CMD_READ_STATUS			0x05
 #define CMD_READ_STATUS1		0x35
 #define CMD_READ_CONFIG			0x35
 #define CMD_FLAG_STATUS			0x70
-#define CMD_CLEAR_STATUS		0x30
-#define CMD_READ_SFDP			0x5a	/* SFDP table read command */
 
 /* Bank addr access commands */
 #ifdef CONFIG_SPI_FLASH_BAR
@@ -175,8 +75,6 @@ enum spi_nor_option_flags {
 #define STATUS_QEB_WINSPAN		BIT(1)
 #define STATUS_QEB_MXIC			BIT(6)
 #define STATUS_PEC			BIT(7)
-#define STATUS_E_ERR			BIT(5)
-#define STATUS_P_ERR			BIT(6)
 #define SR_BP0				BIT(2)  /* Block protect 0 */
 #define SR_BP1				BIT(3)  /* Block protect 1 */
 #define SR_BP2				BIT(4)  /* Block protect 2 */
@@ -235,41 +133,17 @@ struct spi_flash_info {
 	u32		n_sectors;
 
 	u16		page_size;
-	u16		addr_width;
 
-	u32		flags;
-#define SECT_4K					BIT(0)	/* CMD_ERASE_4K works uniformly */
-#define SPI_NOR_NO_ERASE		BIT(1)	/* No erase command needed */
-#define SST_WRITE				BIT(2)	/* use SST byte/word programming */
-#define SPI_NOR_NO_FR			BIT(3)	/* Can't do fastread */
-#define SECT_4K_PMC				BIT(4)	/* CMD_ERASE_4K_PMC works uniformly */
-#define SPI_NOR_DUAL_READ		BIT(5)	/* Flash supports Dual Read */
-#define SPI_NOR_QUAD_READ		BIT(6)	/* Flash supports Quad Read */
-#define USE_FSR					BIT(7)	/* use flag status register */
-#define SPI_NOR_HAS_LOCK		BIT(8)	/* Flash supports lock/unlock via SR */
-#define SPI_NOR_HAS_TB			BIT(9)	/* Flash SR has Top/Bottom (TB) protect bit */
-#define SPI_S3AN				BIT(10)	
-					/* Xilinx Spartan 3AN In-System Flash
-					 * (MFR cannot be used for probing because
-					 * it has the same value as ATMEL flashes)
-					 */
-#define SPI_NOR_4B_OPCODES		BIT(11)	
-					/* Use dedicated 4byte address op codes
-					 * to support memory size above 128Mib.
-					 */
-#define NO_CHIP_ERASE			BIT(12)	/* Chip does not support chip erase */
-#define SPI_NOR_SKIP_SFDP		BIT(13)	/* Skip parsing of SFDP tables */
-#define USE_CLSR				BIT(14)	/* use CLSR command */
-#define SPI_NOR_HAS_SST26LOCK	BIT(15)	/* Flash supports lock/unlock via BPR */
-#define SPI_NOR_OCTAL_READ		BIT(16)	/* Flash supports Octal Read */
-#define SPI_NOR_OCTAL_DTR_READ	BIT(17)	/* Flash supports Octal DTR Read */
-#define WR_QPP					BIT(18)	/* Use Quad Page Program (probe-time) */
-
-/* Legacy aliases for backward compatibility */
-#define SST_WR			SST_WRITE
-#define E_FSR			USE_FSR
-#define RD_QUAD			SPI_NOR_QUAD_READ
-#define RD_DUAL			SPI_NOR_DUAL_READ
+	u16		flags;
+#define SECT_4K			BIT(0)	/* CMD_ERASE_4K works uniformly */
+#define E_FSR			BIT(1)	/* use flag status register for */
+#define SST_WR			BIT(2)	/* use SST byte/word programming */
+#define WR_QPP			BIT(3)	/* use Quad Page Program */
+#define RD_QUAD			BIT(4)	/* use Quad Read */
+#define RD_DUAL			BIT(5)	/* use Dual Read */
+#define RD_QUADIO		BIT(6)	/* use Quad IO Read */
+#define RD_DUALIO		BIT(7)	/* use Dual IO Read */
+#define RD_FULL			(RD_QUAD | RD_DUAL | RD_QUADIO | RD_DUALIO)
 };
 
 extern const struct spi_flash_info spi_flash_ids[];
