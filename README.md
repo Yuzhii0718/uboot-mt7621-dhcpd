@@ -10,7 +10,7 @@ Support functions and Features:
 
 - Failsafe Mode with Web Recovery Page
 - Support light/dark theme
-- I18n support (English/Chinese)
+- I18n support (English/Chinese/Russian)
 - Auto dhcpd server
 - Support Web upgrade U-Boot
 - Can boot Initramfs firmware in Web

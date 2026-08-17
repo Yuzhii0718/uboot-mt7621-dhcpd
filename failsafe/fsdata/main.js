@@ -442,14 +442,16 @@ function upload(n) {
     function y() {
         var n = [],
             t, i;
-        for (navigator.languages && navigator.languages.length ? n = navigator.languages : navigator.language && (n = [navigator.language]), t = 0; t < n.length; t++)
+        for (navigator.languages && navigator.languages.length ? n = navigator.languages : navigator.language && (n = [navigator.language]), t = 0; t < n.length; t++) {
             if (i = (n[t] || "").toLowerCase(), i.indexOf("zh") === 0) return "zh";
+            if (i.indexOf("ru") === 0) return "ru"
+        }
         return "en"
     }
 
     function h() {
         t.langPref = r(f, "auto");
-        t.lang = t.langPref === "zh" || t.langPref === "en" ? t.langPref : y();
+        t.lang = t.langPref === "zh" || t.langPref === "en" || t.langPref === "ru" ? t.langPref : y();
         document.documentElement.lang = t.lang
     }
 
@@ -466,7 +468,7 @@ function upload(n) {
         if (i = (location.pathname || "").toLowerCase(), i === "/" || i.indexOf("index.html") >= 0 ? document.title = n("page_firmware_title") : i.indexOf("uboot.html") >= 0 ? document.title = n("page_uboot_title") : i.indexOf("initramfs.html") >= 0 ? document.title = n("page_initramfs_title") : i.indexOf("flashing.html") >= 0 ? document.title = n("page_flashing_title") : i.indexOf("booting.html") >= 0 ? document.title = n("page_booting_title") : i.indexOf("fail.html") >= 0 ? document.title = n("page_fail_title") : i.indexOf("success.html") >= 0 ? document.title = n("page_success_title") : i.indexOf("404") >= 0 && (document.title = n("page_404_title")), f = document.querySelector(".app-shell"), f) {
             for (rt = f.querySelector(".app-brand"), rt && (rt.textContent = n("brand")), ut = f.querySelectorAll("[data-nav-key]"), a = 0; a < ut.length; a++) ft = ut[a], et = ft.getAttribute("data-nav-key"), et && (ft.textContent = n(et));
             if (ot = f.querySelector('[data-i18n="ctl_language"]'), ot && (ot.textContent = n("ctl_language")), st = f.querySelector('[data-i18n="ctl_theme"]'), st && (st.textContent = n("ctl_theme")), v = document.getElementById("lang-select"), v)
-                for (y = 0; y < v.options.length; y++) r = v.options[y], r.value === "auto" ? r.textContent = n("opt_auto") : r.value === "zh" ? r.textContent = n("opt_zh") : r.value === "en" && (r.textContent = n("opt_en"));
+                for (y = 0; y < v.options.length; y++) r = v.options[y], r.value === "auto" ? r.textContent = n("opt_auto") : r.value === "zh" ? r.textContent = n("opt_zh") : r.value === "ru" ? r.textContent = n("opt_ru") : r.value === "en" && (r.textContent = n("opt_en"));
             if (p = document.getElementById("theme-select"), p)
                 for (w = 0; w < p.options.length; w++) u = p.options[w], u.value === "auto" ? u.textContent = n("opt_auto") : u.value === "light" ? u.textContent = n("opt_light") : u.value === "dark" && (u.textContent = n("opt_dark"))
         }
@@ -526,7 +528,7 @@ function upload(n) {
                     return confirm(n("reboot_confirm"))
                 })
             }
-            for (i.appendChild(tt), v = document.createElement("div"), v.className = "app-controls", y = document.createElement("div"), y.className = "app-control-row", w = document.createElement("div"), w.className = "app-control-label", w.setAttribute("data-i18n", "ctl_language"), w.textContent = n("ctl_language"), u = document.createElement("select"), u.className = "app-select", u.id = "lang-select", u.innerHTML = '<option value="auto">' + n("opt_auto") + '<\/option><option value="zh">' + n("opt_zh") + '<\/option><option value="en">' + n("opt_en") + "<\/option>", u.addEventListener("change", function () {
+            for (i.appendChild(tt), v = document.createElement("div"), v.className = "app-controls", y = document.createElement("div"), y.className = "app-control-row", w = document.createElement("div"), w.className = "app-control-label", w.setAttribute("data-i18n", "ctl_language"), w.textContent = n("ctl_language"), u = document.createElement("select"), u.className = "app-select", u.id = "lang-select", u.innerHTML = '<option value="auto">' + n("opt_auto") + '<\/option><option value="zh">' + n("opt_zh") + '<\/option><option value="ru">' + n("opt_ru") + '<\/option><option value="en">' + n("opt_en") + "<\/option>", u.addEventListener("change", function () {
                 a(this.value)
             }), y.appendChild(w), y.appendChild(u), v.appendChild(y), b = document.createElement("div"), b.className = "app-control-row", k = document.createElement("div"), k.className = "app-control-label", k.setAttribute("data-i18n", "ctl_theme"), k.textContent = n("ctl_theme"), f = document.createElement("select"), f.className = "app-select", f.id = "theme-select", f.innerHTML = '<option value="auto">' + n("opt_auto") + '<\/option><option value="light">' + n("opt_light") + '<\/option><option value="dark">' + n("opt_dark") + "<\/option>", f.addEventListener("change", function () {
                 l(this.value)
@@ -580,6 +582,7 @@ function upload(n) {
                 opt_dark: "Dark",
                 opt_zh: "中文",
                 opt_en: "English",
+                opt_ru: "Русский",
                 page_firmware_title: "Firmware update",
                 h_firmware: "FIRMWARE UPDATE",
                 hint_firmware: "You are going to update <strong>firmware<\/strong> on the device.<br>Please, choose file from your local hard drive and click <strong>Upload<\/strong> button.",
@@ -681,6 +684,7 @@ function upload(n) {
                 opt_dark: "深色",
                 opt_zh: "中文",
                 opt_en: "English",
+                opt_ru: "Русский",
                 page_firmware_title: "固件升级",
                 h_firmware: "固件升级",
                 hint_firmware: "你将要为设备更新<strong>固件<\/strong>。<br>请选择本地文件并点击<strong>上传<\/strong>按钮。",
@@ -766,6 +770,108 @@ function upload(n) {
                 sysinfo_mtdparts: "分区表(mtdparts)：",
                 sysinfo_mtdids: "设备映射(mtdids)：",
                 sysinfo_more: "更多信息"
+            },
+            ru: {
+                brand: "Режим восстановления системы",
+                nav_firmware: "Обновление прошивки",
+                nav_uboot: "Обновление U-Boot",
+                nav_initramfs: "Загрузка Initramfs",
+                nav_factory: "Обновление Factory",
+                nav_backup: "Резервная копия",
+                nav_reboot: "Перезагрузка",
+                ctl_language: "🌐 Язык",
+                ctl_theme: "🎨 Тема",
+                opt_auto: "Авто",
+                opt_light: "Светлая",
+                opt_dark: "Тёмная",
+                opt_zh: "中文",
+                opt_en: "English",
+                opt_ru: "Русский",
+                page_firmware_title: "Обновление прошивки",
+                h_firmware: "ОБНОВЛЕНИЕ ПРОШИВКИ",
+                hint_firmware: "Вы собираетесь обновить <strong>прошивку<\/strong> устройства.<br>Выберите файл на локальном диске и нажмите кнопку <strong>Загрузить<\/strong>.",
+                other_warnings: "ПРЕДУПРЕЖДЕНИЯ",
+                warn_no_poweroff: "не отключайте питание устройства во время обновления",
+                warn_restart: "если всё пройдёт успешно, устройство перезагрузится",
+                warn_choose_fw: "загрузить можно любой файл — убедитесь, что выбрали правильный образ прошивки для вашего устройства",
+                btn_upload: "Загрузить",
+                prompt_update: 'Если все данные выше верны, нажмите «Обновить».',
+                btn_update: "Обновить",
+                page_uboot_title: "Обновление U-Boot",
+                h_uboot: "ОБНОВЛЕНИЕ U-BOOT",
+                hint_uboot: "Вы собираетесь обновить <strong>U-Boot (загрузчик)<\/strong> устройства.<br>Выберите файл на локальном диске и нажмите кнопку <strong>Загрузить<\/strong>.",
+                warn_choose_uboot: "загрузить можно любой файл — убедитесь, что выбрали правильный образ U-Boot для вашего устройства",
+                warn_uboot_danger: "обновление U-Boot — очень опасная операция и может повредить устройство!",
+                page_initramfs_title: "Загрузка initramfs",
+                h_initramfs: "ЗАГРУЗКА INITRAMFS",
+                hint_initramfs: "Вы собираетесь загрузить <strong>initramfs<\/strong> на устройстве.<br>Выберите файл на локальном диске и нажмите кнопку <strong>Загрузить<\/strong>.",
+                warn_boot_initramfs: "если всё пройдёт успешно, устройство загрузится в initramfs",
+                warn_choose_initramfs: "загрузить можно любой файл — убедитесь, что выбрали правильный образ initramfs для вашего устройства",
+                prompt_boot: 'Если все данные выше верны, нажмите «Загрузить».',
+                btn_boot: "Загрузить",
+                page_flashing_title: "Идёт обновление",
+                h_update_in_progress: "ИДЁТ ОБНОВЛЕНИЕ",
+                p_update_in_progress: "Файл успешно загружен! Идёт обновление, дождитесь автоматической перезагрузки устройства.<br>Время обновления зависит от размера образа и может занять несколько минут.",
+                h_update_completed: "ОБНОВЛЕНИЕ ЗАВЕРШЕНО",
+                p_update_completed: "Устройство успешно обновлено! Идёт перезагрузка...",
+                page_booting_title: "Загрузка initramfs",
+                h_booting_initramfs: "ЗАГРУЗКА INITRAMFS",
+                p_booting_initramfs: "Файл успешно загружен! Идёт загрузка, подождите...<br>Эта страница может ненадолго перестать отвечать.",
+                h_boot_success: "ЗАГРУЗКА УСПЕШНА",
+                p_boot_success: "Устройство успешно загружено в initramfs!",
+                page_fail_title: "Ошибка обновления",
+                h_update_failed: "ОШИБКА ОБНОВЛЕНИЯ",
+                fail_detail_html: "<strong>Во время обновления что-то пошло не так<\/strong>Вероятно, выбран неверный файл. Попробуйте ещё раз. Больше сведений о ходе обновления можно увидеть в консоли U-Boot.",
+                page_success_title: "Успех",
+                h_success: "УСПЕХ",
+                p_success: "OK",
+                page_404_title: "404 — страница не найдена",
+                page_not_found: "Страница не найдена",
+                page_factory_title: "Обновление Factory",
+                h_factory: "ОБНОВЛЕНИЕ FACTORY",
+                hint_factory: "Вы собираетесь обновить раздел <strong>Factory (калибровка беспроводного модуля)<\/strong> на устройстве.<br>Выберите файл на локальном диске и нажмите кнопку <strong>Загрузить<\/strong>.",
+                warn_factory_danger: "обновление раздела Factory может повредить устройство или испортить данные калибровки",
+                page_backup_title: "Резервная копия",
+                h_backup: "РЕЗЕРВНАЯ КОПИЯ",
+                hint_backup: "Скачайте резервную копию из хранилища устройства как <strong>двоичный файл<\/strong>.<br>Данные будут переданы в браузер и сохранены на вашем компьютере.",
+                backup_label_mode: "Режим:",
+                backup_label_target: "Цель:",
+                backup_label_start: "Начало:",
+                backup_label_end: "Конец (не включая):",
+                backup_mode_part: "Копия раздела",
+                backup_mode_range: "Произвольный диапазон",
+                backup_mode_full: "Полная копия флеша",
+                backup_btn_download: "Скачать",
+                backup_target_placeholder: "-- выберите --",
+                backup_range_hint: "Подсказка: поддерживаются десятичные, 0xHEX и суффикс KiB (например, 64KiB).",
+                backup_warn_1: "не отключайте питание устройства во время резервного копирования",
+                backup_warn_2: "произвольный диапазон читает сырые байты — будьте внимательны со смещениями",
+                backup_warn_3: "большие копии могут занять много времени в зависимости от скорости флеша",
+                backup_status_starting: "Запуск...",
+                backup_status_downloading: "Загрузка:",
+                backup_status_preparing: "Подготовка файла...",
+                backup_status_done: "Готово:",
+                backup_error_no_target: "Выберите цель",
+                backup_error_bad_range: "Введите корректные начало/конец",
+                backup_error_http: "Ошибка HTTP",
+                backup_error_exception: "Ошибка:",
+                backup_target_full_disk: "Весь флеш",
+                page_reboot_title: "Перезагрузка",
+                h_reboot: "ПЕРЕЗАГРУЗКА УСТРОЙСТВА",
+                reboot_info: "Запрос на перезагрузку отправлен. Подождите...<br>Эта страница может ненадолго перестать отвечать.",
+                reboot_warn_1: "не отключайте питание устройства во время перезагрузки",
+                reboot_confirm: "Перезагрузить устройство сейчас?",
+                sysinfo_loading: "Загрузка сведений о системе...",
+                sysinfo_board: "Плата:",
+                sysinfo_ram: "ОЗУ:",
+                sysinfo_unknown: "неизвестно",
+                sysinfo_compat: "Совместимость:",
+                sysinfo_flash: "Флеш:",
+                sysinfo_flash_raw: "Сырой:",
+                sysinfo_flash_nmbm: "NMBM:",
+                sysinfo_mtdparts: "mtdparts:",
+                sysinfo_mtdids: "mtdids:",
+                sysinfo_more: "Подробнее"
             }
         };
     window.fsdata = {
